@@ -48,19 +48,30 @@ textarea { height:80px; }
 <div class="box hidden" id="painelAdmin">
   <h3>Painel do Administrador</h3>
 
+  <!-- CONFIGURAR ÔNIBUS -->
   <h4>Configurar Ônibus</h4>
   <div id="configOnibus"></div>
   <button onclick="salvarOnibus()">Salvar Ônibus</button><br><br>
 
+  <!-- ABAS DE ÔNIBUS PARA LISTA DE PASSAGEIROS -->
   <h4>Reservas por Ônibus</h4>
   <div id="abasOnibus"></div>
   <div id="conteudoOnibus"></div>
   <button onclick="limparReservas()">Limpar Reservas do Dia</button><br><br>
 
+  <!-- CADASTRO DE USUÁRIOS -->
+  <h4>Cadastrar Usuário</h4>
+  <input id="novoUsuarioNome" placeholder="Nome do usuário"><br>
+  <input id="novoUsuarioCodigo" placeholder="Código / Senha"><br>
+  <button onclick="cadastrarUsuario()">Cadastrar Usuário</button><br><br>
+  <div id="listaUsuarios"></div>
+
+  <!-- SUGESTÕES / RECLAMAÇÕES -->
   <h4>Mensagens</h4>
   <div id="listaFeedbacks"></div>
   <button onclick="limparFeedbacks()">Limpar Sugestões/Reclamações</button><br><br>
 
+  <!-- TROCA DE SENHA ADMIN -->
   <h4>Alterar Senha</h4>
   <input id="novaSenha" type="password" placeholder="Nova senha">
   <button onclick="trocarSenha()">Salvar nova senha</button><br><br>
@@ -133,6 +144,11 @@ function entrarUsuario(){
   const nome=document.getElementById("nome").value;
   const codigo=document.getElementById("codigo").value;
   if(!nome||!codigo){alert("Preencha tudo"); return;}
+  let usuarios = JSON.parse(localStorage.getItem("usuarios")) || {};
+  if(!usuarios[codigo] || usuarios[codigo].nome !== nome){
+    alert("Usuário ou código inválido");
+    return;
+  }
   usuarioAtual={nome:nome,codigo:codigo};
   mostrarOnibus();
 }
@@ -150,6 +166,7 @@ function entrarAdmin(){
     listarReservasAdmin();
     listarFeedbacks();
     gerarAbasOnibus();
+    listarUsuariosAdmin();
   } else alert("Usuário ou senha incorretos");
 }
 function trocarSenha(){ADMIN_PASS=document.getElementById("novaSenha").value; localStorage.setItem("adminPass",ADMIN_PASS); alert("Senha alterada!");document.getElementById("novaSenha").value="";}
@@ -188,7 +205,7 @@ function listarReservasAdmin(){
   for(let c in reservas){
     html+=`${reservas[c].nome} → ${onibus[reservas[c].onibus].nome} (${onibus[reservas[c].onibus].rota})<br>`;
   }
-  document.getElementById("listaReservas").innerHTML=html||"Nenhuma reserva";
+  document.getElementById("listaFeedbacks").innerHTML=html||"Nenhuma reserva";
 }
 function limparReservas(){localStorage.removeItem("reservas"); reservas={}; onibus=JSON.parse(localStorage.getItem("onibus"))||onibusPadrao; localStorage.setItem("onibus",JSON.stringify(onibus)); listarReservasAdmin(); gerarAbasOnibus(); alert("Reservas apagadas!");}
 
@@ -200,6 +217,35 @@ function listarFeedbacks(){
   document.getElementById("listaFeedbacks").innerHTML=html||"Nenhuma mensagem";
 }
 function limparFeedbacks(){localStorage.removeItem("sugestoes"); listarFeedbacks(); alert("Sugestões apagadas!");}
+
+// CADASTRO DE USUÁRIOS
+function cadastrarUsuario(){
+  const nome = document.getElementById("novoUsuarioNome").value.trim();
+  const codigo = document.getElementById("novoUsuarioCodigo").value.trim();
+  if(!nome || !codigo){ alert("Preencha nome e código"); return; }
+
+  let usuarios = JSON.parse(localStorage.getItem("usuarios")) || {};
+  if(usuarios[codigo]){
+    alert("Código já cadastrado");
+    return;
+  }
+
+  usuarios[codigo] = {nome: nome, codigo: codigo};
+  localStorage.setItem("usuarios", JSON.stringify(usuarios));
+  document.getElementById("novoUsuarioNome").value="";
+  document.getElementById("novoUsuarioCodigo").value="";
+  alert("Usuário cadastrado!");
+  listarUsuariosAdmin();
+}
+
+function listarUsuariosAdmin(){
+  const container = document.getElementById("listaUsuarios");
+  const usuarios = JSON.parse(localStorage.getItem("usuarios")) || {};
+  container.innerHTML = "<b>Usuários cadastrados:</b><br>";
+  for(let c in usuarios){
+    container.innerHTML += `${usuarios[c].nome} (Código: ${usuarios[c].codigo})<br>`;
+  }
+}
 
 // ESCOLHA ÔNIBUS
 function mostrarOnibus(){
@@ -236,7 +282,7 @@ function reservar(id){
   mostrarLista(id);
 }
 
-// LISTA NOMES
+// LISTA NOMES USUÁRIO
 function mostrarLista(id){
   esconderTudo();
   const tela=document.getElementById("telaLista");
@@ -265,7 +311,7 @@ function enviarSugestao(){
   alert("Enviado!");
 }
 
-// NOVO: ABAS POR ÔNIBUS NO ADMIN
+// ABAS POR ÔNIBUS NO ADMIN
 function gerarAbasOnibus(){
   const container=document.getElementById("abasOnibus");
   const conteudo=document.getElementById("conteudoOnibus");
