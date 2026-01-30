@@ -52,11 +52,6 @@ button{background:#1976d2;color:white;border:none;border-radius:8px}
 const ADMIN_USER = "smechaval";
 let ADMIN_PASS = localStorage.getItem("adminPass") || "smech@v@l";
 
-function horaPermitida(){
-  const h = new Date().getHours();
-  return h >= 8 && h < 17;
-}
-
 function mostrarAdmin(){
   document.getElementById("loginUser").classList.add("hidden");
   document.getElementById("loginAdmin").classList.remove("hidden");
@@ -68,16 +63,52 @@ function voltar(){
 }
 
 function entrarAdmin(){
-  const u = adminUser.value;
-  const p = adminPass.value;
-  if(u===ADMIN_USER && p===ADMIN_PASS){
-    loginAdmin.classList.add("hidden");
-    painelAdmin.classList.remove("hidden");
-  } else alert("Usuário ou senha incorretos");
+  const u = document.getElementById("adminUser").value;
+  const p = document.getElementById("adminPass").value;
+
+  if(u === ADMIN_USER && p === ADMIN_PASS){
+    document.getElementById("loginAdmin").classList.add("hidden");
+    document.getElementById("painelAdmin").classList.remove("hidden");
+  } else {
+    alert("Usuário ou senha incorretos");
+  }
 }
 
 function trocarSenha(){
-  const nova = novaSenha.value;
-  if(!nova){alert("Digite a nova senha");return;}
-  ADMIN_PASS=nova;
-  localStorage.setItem
+  const nova = document.getElementById("novaSenha").value;
+  if(!nova){ alert("Digite a nova senha"); return; }
+  ADMIN_PASS = nova;
+  localStorage.setItem("adminPass", nova);
+  alert("Senha alterada com sucesso!");
+  document.getElementById("novaSenha").value = "";
+}
+
+function entrarUsuario(){
+  const nome=document.getElementById("nome").value;
+  const codigo=document.getElementById("codigo").value;
+  if(!nome||!codigo){alert("Preencha os campos");return;}
+  document.getElementById("loginUser").classList.add("hidden");
+  document.getElementById("painelUser").classList.remove("hidden");
+  carregarOnibus();
+}
+
+function sair(){
+  location.reload();
+}
+
+function carregarOnibus(){
+  const onibus=["Ônibus 1","Ônibus 2","Ônibus 3","Ônibus 4","Ônibus 5"];
+  let html="";
+  onibus.forEach(o=>{
+    html+=`<button onclick="reservar('${o}')">${o}</button><br>`;
+  });
+  document.getElementById("listaOnibus").innerHTML=html;
+}
+
+function reservar(o){
+  alert("Reserva feita em: "+o);
+}
+</script>
+
+</body>
+</html>
