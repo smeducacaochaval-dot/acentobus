@@ -35,6 +35,12 @@ button{background:#1976d2;color:white;border:none;border-radius:8px}
 <div class="card hidden" id="painelAdmin">
   <h3>Painel do Administrador</h3>
   <p>Bem-vindo, administrador.</p>
+
+  <h4>Alterar senha</h4>
+  <input id="novaSenha" type="password" placeholder="Nova senha">
+  <button onclick="trocarSenha()">Salvar nova senha</button>
+
+  <br><br>
   <button onclick="sair()">Sair</button>
 </div>
 
@@ -46,7 +52,7 @@ button{background:#1976d2;color:white;border:none;border-radius:8px}
 
 <script>
 const ADMIN_USER = "smechaval";
-const ADMIN_PASS = "smech@v@l";
+let ADMIN_PASS = localStorage.getItem("adminPass") || "smech@v@l";
 
 function mostrarAdmin(){
   document.getElementById("loginUser").classList.add("hidden");
@@ -68,6 +74,15 @@ function entrarAdmin(){
   } else {
     alert("Usuário ou senha incorretos");
   }
+}
+
+function trocarSenha(){
+  const nova = document.getElementById("novaSenha").value;
+  if(!nova){ alert("Digite a nova senha"); return; }
+  ADMIN_PASS = nova;
+  localStorage.setItem("adminPass", nova);
+  alert("Senha alterada com sucesso!");
+  document.getElementById("novaSenha").value = "";
 }
 
 function entrarUsuario(){
@@ -99,5 +114,7 @@ function reservar(o){
 
 </body>
 </html>
+
+
 
 
