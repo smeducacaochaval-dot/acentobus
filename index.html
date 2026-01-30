@@ -6,11 +6,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{font-family:Arial;background:#1976d2;color:white;text-align:center}
-.card{background:white;color:black;margin:15px auto;padding:15px;border-radius:15px;width:350px}
+.card{background:white;color:black;margin:15px auto;padding:15px;border-radius:15px;width:360px}
 input,button,textarea{width:100%;padding:8px;margin-top:6px}
 button{background:#1976d2;color:white;border:none;border-radius:8px}
 .hidden{display:none}
 small{color:#555}
+hr{margin:10px 0}
 </style>
 </head>
 <body>
@@ -67,13 +68,15 @@ small{color:#555}
 </div>
 
 <div class="card hidden" id="painelUser">
-  <h3>Escolha seu ônibus</h3>
-  <div id="listaOnibus"></div>
+  <h3>Minha reserva</h3>
+  <div id="statusReserva"></div>
 
   <hr>
 
-  <h4>Meu histórico</h4>
-  <div id="meuHistorico"></div>
+  <h4>Escolher / Trocar ônibus</h4>
+  <div id="listaOnibus"></div>
+
+  <button onclick="cancelarReserva()">Cancelar reserva</button>
 
   <hr>
 
@@ -100,6 +103,8 @@ let onibus=JSON.parse(localStorage.getItem("onibus"))||[
 let codigos=JSON.parse(localStorage.getItem("codigos"))||[];
 let reservas=JSON.parse(localStorage.getItem("reservas"))||[];
 let feedbacks=JSON.parse(localStorage.getItem("feedbacks"))||[];
+
+let usuarioAtual=null;
 
 function mostrarAdmin(){
  loginUser.classList.add("hidden");
@@ -174,7 +179,7 @@ function removerCodigo(i){
 function listarReservas(){
  let html="";
  reservas.forEach(r=>{
-  html+=`${r.nome} → ${r.onibus}<br>`;
+  html+=`${r.nome} (${r.codigo}) → ${r.onibus}<br>`;
  });
  listaReservas.innerHTML=html||"Nenhuma reserva";
 }
@@ -190,11 +195,23 @@ function listarFeedbacks(){
 function entrarUsuario(){
  if(!nome.value||!codigo.value){alert("Preencha os campos");return;}
  if(!codigos.includes(codigo.value)){alert("Código inválido");return;}
- if(reservas.find(r=>r.codigo===codigo.value)){alert("Este código já foi usado");return;}
+
+ usuarioAtual={nome:nome.value,codigo:codigo.value};
+
  loginUser.classList.add("hidden");
  painelUser.classList.remove("hidden");
+
+ atualizarStatusReserva();
  listarOnibus();
- listarHistorico();
+}
+
+function atualizarStatusReserva(){
+ const r=reservas.find(r=>r.codigo===usuarioAtual.codigo);
+ if(r){
+  statusReserva.innerHTML=`Você reservou no: <b>${r.onibus}</b>`;
+ } else {
+  statusReserva.innerHTML="Você ainda não tem reserva.";
+ }
 }
 
 function listarOnibus(){
@@ -208,25 +225,29 @@ function listarOnibus(){
 }
 
 function reservar(i){
- const usados=reservas.filter(r=>r.onibus===onibus[i].nome).length;
- if(usados>=onibus[i].vagas){alert("Ônibus lotado");return;}
- reservas.push({nome:nome.value,codigo:codigo.value,onibus:onibus[i].nome});
+ const atual=reservas.find(r=>r.codigo===usuarioAtual.codigo);
+ if(atual){
+  atual.onibus=onibus[i].nome;
+ } else {
+  reservas.push({nome:usuarioAtual.nome,codigo:usuarioAtual.codigo,onibus:onibus[i].nome});
+ }
  localStorage.setItem("reservas",JSON.stringify(reservas));
- alert("Reserva confirmada!");
+ alert("Reserva atualizada!");
+ atualizarStatusReserva();
  listarOnibus();
- listarHistorico();
 }
 
-function listarHistorico(){
- let html="";
- reservas.filter(r=>r.codigo===codigo.value)
- .forEach(r=>{html+=`${r.onibus}<br>`});
- meuHistorico.innerHTML=html||"Nenhuma reserva";
+function cancelarReserva(){
+ reservas=reservas.filter(r=>r.codigo!==usuarioAtual.codigo);
+ localStorage.setItem("reservas",JSON.stringify(reservas));
+ alert("Reserva cancelada!");
+ atualizarStatusReserva();
+ listarOnibus();
 }
 
 function enviarMensagem(){
  if(!mensagem.value){alert("Digite a mensagem");return;}
- feedbacks.push({nome:nome.value,msg:mensagem.value});
+ feedbacks.push({nome:usuarioAtual.nome,msg:mensagem.value});
  localStorage.setItem("feedbacks",JSON.stringify(feedbacks));
  mensagem.value="";
  alert("Mensagem enviada!");
@@ -237,3 +258,5 @@ function sair(){location.reload();}
 
 </body>
 </html>
+
+
