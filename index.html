@@ -4,263 +4,119 @@
 <meta charset="UTF-8">
 <title>AcentoBus</title>
 <link rel="manifest" href="manifest.json">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-body{font-family:Arial;background:#0d47a1;color:white;text-align:center}
-.header{background:white;color:#0d47a1;padding:10px;border-radius:15px;margin:10px}
-.header img{max-width:120px}
-.card{background:white;color:black;margin:15px auto;padding:15px;border-radius:15px;width:360px}
-input,button,textarea{width:100%;padding:8px;margin-top:6px}
-button{background:#0d47a1;color:white;border:none;border-radius:8px}
-.hidden{display:none}
-hr{margin:10px 0}
+body { font-family: Arial, sans-serif; background:#f2f2f2; text-align:center; }
+button { padding:10px; margin:5px; }
+.box { background:white; padding:15px; margin:10px; border-radius:8px; }
+.hidden { display:none; }
 </style>
 </head>
 <body>
 
-<div class="header">
-  <img src="logo.png">
-  <h2>AcentoBus</h2>
+<h1>AcentoBus</h1>
+
+<div class="box" id="loginUsuario">
+  <h3>Reserva</h3>
+  <input id="nome" placeholder="Nome"><br><br>
+  <input id="codigo" placeholder="Código"><br><br>
+  <button onclick="mostrarOnibus()">Entrar</button>
 </div>
 
-<div class="card" id="loginUser">
-  <input id="nome" placeholder="Seu nome">
-  <input id="codigo" placeholder="Seu código">
-  <button onclick="entrarUsuario()">Entrar</button>
-  <br><br>
-  <button onclick="mostrarAdmin()">Sou Administrador</button>
-</div>
+<div class="box hidden" id="telaOnibus"></div>
 
-<div class="card hidden" id="loginAdmin">
-  <h3>Login do Administrador</h3>
-  <input id="adminUser" placeholder="Usuário">
-  <input id="adminPass" type="password" placeholder="Senha">
-  <button onclick="entrarAdmin()">Entrar</button>
-  <button onclick="voltar()">Voltar</button>
-</div>
+<div class="box hidden" id="telaLista"></div>
 
-<div class="card hidden" id="painelAdmin">
-  <h3>Painel do Administrador</h3>
-
-  <h4>Configurar ônibus</h4>
-  <div id="configOnibus"></div>
-  <button onclick="salvarOnibus()">Salvar ônibus</button>
-
-  <hr>
-
-  <h4>Códigos</h4>
-  <input id="novoCodigo" placeholder="Novo código">
-  <button onclick="adicionarCodigo()">Adicionar</button>
-  <div id="listaCodigos"></div>
-
-  <hr>
-
-  <h4>Reservas</h4>
-  <div id="listaReservas"></div>
-  <button onclick="limparReservas()">🧹 Limpar reservas do dia</button>
-
-  <hr>
-
-  <h4>Mensagens</h4>
-  <div id="listaFeedbacks"></div>
-
-  <hr>
-
-  <h4>Alterar senha</h4>
-  <input id="novaSenha" type="password" placeholder="Nova senha">
-  <button onclick="trocarSenha()">Salvar nova senha</button>
-
-  <br><br>
-  <button onclick="sair()">Sair</button>
-</div>
-
-<div class="card hidden" id="painelUser">
-  <h3>Escolha seu ônibus</h3>
-  <div id="listaOnibus"></div>
-  <button onclick="sair()">Sair</button>
-</div>
-
-<div class="card hidden" id="paginaOnibus">
-  <h3 id="tituloOnibus"></h3>
-  <div id="listaNomes"></div>
-
-  <hr>
-
-  <h4>Sugestão / Reclamação</h4>
-  <textarea id="mensagem" placeholder="Escreva aqui..."></textarea>
-  <button onclick="enviarMensagem()">Enviar</button>
-
-  <br><br>
-  <button onclick="voltarOnibus()">Voltar</button>
+<div class="box">
+  <h3>Sugestões / Reclamações</h3>
+  <textarea id="sugestao" placeholder="Digite aqui"></textarea><br>
+  <button onclick="enviarSugestao()">Enviar</button>
 </div>
 
 <script>
-const ADMIN_USER="smechaval";
-let ADMIN_PASS=localStorage.getItem("adminPass")||"smech@v@l";
+const onibusPadrao = {
+  1:{nome:"Ônibus 1", vagas:5, lista:[]},
+  2:{nome:"Ônibus 2", vagas:5, lista:[]},
+  3:{nome:"Ônibus 3", vagas:5, lista:[]},
+  4:{nome:"Ônibus 4", vagas:5, lista:[]},
+  5:{nome:"Ônibus 5", vagas:5, lista:[]}
+};
 
-let onibus=JSON.parse(localStorage.getItem("onibus"))||[
- {nome:"Ônibus 1",vagas:40},
- {nome:"Ônibus 2",vagas:40},
- {nome:"Ônibus 3",vagas:40},
- {nome:"Ônibus 4",vagas:40},
- {nome:"Ônibus 5",vagas:40}
-];
-
-let codigos=JSON.parse(localStorage.getItem("codigos"))||[];
-let reservas=JSON.parse(localStorage.getItem("reservas"))||[];
-let feedbacks=JSON.parse(localStorage.getItem("feedbacks"))||[];
-
-let usuarioAtual=null;
-let onibusAtual=null;
-
-function dentroDoHorario(){
- const h=new Date().getHours();
- return h>=8 && h<17;
+function verificarNovoDia(){
+  const hoje = new Date().toLocaleDateString();
+  const salvo = localStorage.getItem("dataSistema");
+  if(salvo !== hoje){
+    localStorage.setItem("onibus", JSON.stringify(onibusPadrao));
+    localStorage.removeItem("reservas");
+    localStorage.removeItem("sugestoes");
+    localStorage.setItem("dataSistema", hoje);
+  }
 }
 
-function mostrarAdmin(){
- loginUser.classList.add("hidden");
- loginAdmin.classList.remove("hidden");
-}
-function voltar(){
- loginAdmin.classList.add("hidden");
- loginUser.classList.remove("hidden");
-}
+verificarNovoDia();
 
-function entrarAdmin(){
- if(adminUser.value===ADMIN_USER && adminPass.value===ADMIN_PASS){
-  loginAdmin.classList.add("hidden");
-  painelAdmin.classList.remove("hidden");
-  carregarConfig();
-  listarCodigos();
-  listarReservas();
-  listarFeedbacks();
- } else alert("Usuário ou senha incorretos");
-}
+let onibus = JSON.parse(localStorage.getItem("onibus")) || onibusPadrao;
+let reservas = JSON.parse(localStorage.getItem("reservas")) || {};
 
-function trocarSenha(){
- ADMIN_PASS=novaSenha.value;
- localStorage.setItem("adminPass",ADMIN_PASS);
- alert("Senha alterada!");
- novaSenha.value="";
+function mostrarOnibus(){
+  document.getElementById("loginUsuario").classList.add("hidden");
+  const tela = document.getElementById("telaOnibus");
+  tela.classList.remove("hidden");
+  tela.innerHTML="<h3>Escolha seu ônibus</h3>";
+
+  for(let i in onibus){
+    let btn=document.createElement("button");
+    btn.innerText=`${onibus[i].nome} - ${onibus[i].vagas} vagas`;
+    btn.onclick=()=>reservar(i);
+    tela.appendChild(btn);
+  }
 }
 
-function carregarConfig(){
- let html="";
- onibus.forEach((o,i)=>{
-  html+=`<input value="${o.nome}" onchange="onibus[${i}].nome=this.value">
-         <input type="number" value="${o.vagas}" onchange="onibus[${i}].vagas=this.value"><br>`;
- });
- configOnibus.innerHTML=html;
+function reservar(id){
+  const nome=document.getElementById("nome").value;
+  const codigo=document.getElementById("codigo").value;
+
+  if(!nome||!codigo){alert("Preencha tudo");return;}
+
+  if(reservas[codigo]){
+    let antigo=reservas[codigo].onibus;
+    onibus[antigo].vagas++;
+    onibus[antigo].lista = onibus[antigo].lista.filter(n=>n!==reservas[codigo].nome);
+  }
+
+  if(onibus[id].vagas<=0){alert("Sem vagas");return;}
+
+  reservas[codigo]={nome:nome,onibus:id};
+  onibus[id].vagas--;
+  onibus[id].lista.push(nome);
+
+  localStorage.setItem("reservas",JSON.stringify(reservas));
+  localStorage.setItem("onibus",JSON.stringify(onibus));
+
+  mostrarLista(id);
 }
 
-function salvarOnibus(){
- localStorage.setItem("onibus",JSON.stringify(onibus));
- alert("Ônibus salvos!");
+function mostrarLista(id){
+  document.getElementById("telaOnibus").classList.add("hidden");
+  const tela=document.getElementById("telaLista");
+  tela.classList.remove("hidden");
+  tela.innerHTML=`<h3>${onibus[id].nome}</h3>`;
+
+  onibus[id].lista.forEach(n=>{
+    let p=document.createElement("p");
+    p.innerText=n;
+    tela.appendChild(p);
+  });
 }
 
-function adicionarCodigo(){
- const c=novoCodigo.value.trim();
- if(!c)return;
- codigos.push(c);
- localStorage.setItem("codigos",JSON.stringify(codigos));
- novoCodigo.value="";
- listarCodigos();
+function enviarSugestao(){
+  let texto=document.getElementById("sugestao").value;
+  if(!texto)return;
+  let s=JSON.parse(localStorage.getItem("sugestoes"))||[];
+  s.push({msg:texto,data:new Date().toLocaleDateString()});
+  localStorage.setItem("sugestoes",JSON.stringify(s));
+  alert("Enviado!");
+  document.getElementById("sugestao").value="";
 }
-
-function listarCodigos(){
- let html="";
- codigos.forEach((c,i)=>{
-  html+=`${c} <button onclick="removerCodigo(${i})">❌</button><br>`;
- });
- listaCodigos.innerHTML=html;
-}
-
-function removerCodigo(i){
- codigos.splice(i,1);
- localStorage.setItem("codigos",JSON.stringify(codigos));
- listarCodigos();
-}
-
-function listarReservas(){
- let html="";
- reservas.forEach(r=>{
-  html+=`${r.nome} → ${r.onibus}<br>`;
- });
- listaReservas.innerHTML=html||"Nenhuma";
-}
-
-function limparReservas(){
- reservas=[];
- localStorage.setItem("reservas",JSON.stringify(reservas));
- listarReservas();
- alert("Reservas apagadas!");
-}
-
-function listarFeedbacks(){
- let html="";
- feedbacks.forEach(f=>{
-  html+=`${f.onibus||""} - ${f.nome}: ${f.msg}<br>`;
- });
- listaFeedbacks.innerHTML=html||"Nenhuma mensagem";
-}
-
-function entrarUsuario(){
- if(!dentroDoHorario()){alert("Somente das 08h às 17h");return;}
- if(!nome.value||!codigo.value){alert("Preencha");return;}
- if(!codigos.includes(codigo.value)){alert("Código inválido");return;}
-
- usuarioAtual={nome:nome.value,codigo:codigo.value};
- loginUser.classList.add("hidden");
- painelUser.classList.remove("hidden");
- listarOnibus();
-}
-
-function listarOnibus(){
- let html="";
- onibus.forEach((o,i)=>{
-  html+=`<button onclick="abrirOnibus(${i})">${o.nome}</button><br>`;
- });
- listaOnibus.innerHTML=html;
-}
-
-function abrirOnibus(i){
- onibusAtual=onibus[i].nome;
- const atual=reservas.find(r=>r.codigo===usuarioAtual.codigo);
- if(atual) atual.onibus=onibusAtual;
- else reservas.push({nome:usuarioAtual.nome,codigo:usuarioAtual.codigo,onibus:onibusAtual});
- localStorage.setItem("reservas",JSON.stringify(reservas));
-
- painelUser.classList.add("hidden");
- paginaOnibus.classList.remove("hidden");
- tituloOnibus.innerText=onibusAtual;
- listarNomes();
-}
-
-function listarNomes(){
- const nomes=reservas.filter(r=>r.onibus===onibusAtual).map(r=>r.nome);
- listaNomes.innerHTML=nomes.join("<br>")||"Nenhum ainda";
-}
-
-function enviarMensagem(){
- feedbacks.push({onibus:onibusAtual,nome:usuarioAtual.nome,msg:mensagem.value});
- localStorage.setItem("feedbacks",JSON.stringify(feedbacks));
- mensagem.value="";
- alert("Mensagem enviada!");
-}
-
-function voltarOnibus(){
- paginaOnibus.classList.add("hidden");
- painelUser.classList.remove("hidden");
- listarOnibus();
-}
-
-function sair(){location.reload();}
 </script>
-
 </body>
 </html>
-
-
-
-
