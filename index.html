@@ -9,27 +9,34 @@ body { font-family: Arial, sans-serif; background:#f2f2f2; text-align:center; }
 button { padding:10px; margin:5px; }
 .box { background:white; padding:15px; margin:10px; border-radius:8px; }
 .hidden { display:none; }
+textarea { width:90%; height:80px; }
 </style>
 </head>
 <body>
 
 <h1>AcentoBus</h1>
 
+<!-- LOGIN -->
 <div class="box" id="loginUsuario">
   <h3>Reserva</h3>
   <input id="nome" placeholder="Nome"><br><br>
   <input id="codigo" placeholder="Código"><br><br>
-  <button onclick="mostrarOnibus()">Entrar</button>
+  <button onclick="mostrarOnibus()">Entrar</button><br><br>
+  <button onclick="abrirSugestoes()">Sugestões / Reclamações</button>
 </div>
 
+<!-- TELA ÔNIBUS -->
 <div class="box hidden" id="telaOnibus"></div>
 
+<!-- TELA LISTA -->
 <div class="box hidden" id="telaLista"></div>
 
-<div class="box">
+<!-- TELA SUGESTÕES -->
+<div class="box hidden" id="telaSugestao">
   <h3>Sugestões / Reclamações</h3>
-  <textarea id="sugestao" placeholder="Digite aqui"></textarea><br>
-  <button onclick="enviarSugestao()">Enviar</button>
+  <textarea id="sugestao" placeholder="Digite aqui"></textarea><br><br>
+  <button onclick="enviarSugestao()">Enviar</button><br><br>
+  <button onclick="voltarInicio()">Retornar</button>
 </div>
 
 <script>
@@ -57,8 +64,15 @@ verificarNovoDia();
 let onibus = JSON.parse(localStorage.getItem("onibus")) || onibusPadrao;
 let reservas = JSON.parse(localStorage.getItem("reservas")) || {};
 
-function mostrarOnibus(){
+function esconderTudo(){
   document.getElementById("loginUsuario").classList.add("hidden");
+  document.getElementById("telaOnibus").classList.add("hidden");
+  document.getElementById("telaLista").classList.add("hidden");
+  document.getElementById("telaSugestao").classList.add("hidden");
+}
+
+function mostrarOnibus(){
+  esconderTudo();
   const tela = document.getElementById("telaOnibus");
   tela.classList.remove("hidden");
   tela.innerHTML="<h3>Escolha seu ônibus</h3>";
@@ -69,6 +83,12 @@ function mostrarOnibus(){
     btn.onclick=()=>reservar(i);
     tela.appendChild(btn);
   }
+
+  let voltar=document.createElement("button");
+  voltar.innerText="Retornar";
+  voltar.onclick=voltarInicio;
+  tela.appendChild(document.createElement("br"));
+  tela.appendChild(voltar);
 }
 
 function reservar(id){
@@ -96,7 +116,7 @@ function reservar(id){
 }
 
 function mostrarLista(id){
-  document.getElementById("telaOnibus").classList.add("hidden");
+  esconderTudo();
   const tela=document.getElementById("telaLista");
   tela.classList.remove("hidden");
   tela.innerHTML=`<h3>${onibus[id].nome}</h3>`;
@@ -106,6 +126,21 @@ function mostrarLista(id){
     p.innerText=n;
     tela.appendChild(p);
   });
+
+  let voltar=document.createElement("button");
+  voltar.innerText="Retornar";
+  voltar.onclick=voltarInicio;
+  tela.appendChild(voltar);
+}
+
+function abrirSugestoes(){
+  esconderTudo();
+  document.getElementById("telaSugestao").classList.remove("hidden");
+}
+
+function voltarInicio(){
+  esconderTudo();
+  document.getElementById("loginUsuario").classList.remove("hidden");
 }
 
 function enviarSugestao(){
