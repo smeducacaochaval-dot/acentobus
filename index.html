@@ -4,31 +4,70 @@
 <meta charset="UTF-8">
 <title>AcentoBus</title>
 <link rel="manifest" href="manifest.json">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-body { font-family: Arial, sans-serif; background:#f2f2f2; text-align:center; }
-button { padding:10px; margin:5px; }
-.box { background:white; padding:15px; margin:10px; border-radius:8px; }
+body { font-family: Arial, sans-serif; background:#f2f2f2; text-align:center; margin:0; padding:0; }
+h1,h2,h3,h4 { margin:5px; }
+button { padding:10px; margin:5px; border:none; border-radius:8px; background:#0d47a1; color:white; cursor:pointer; }
+button:hover { background:#1565c0; }
+.box { background:white; padding:15px; margin:10px auto; border-radius:8px; width:90%; max-width:400px; box-shadow:0 2px 5px rgba(0,0,0,0.2); }
 .hidden { display:none; }
-textarea { width:90%; height:80px; }
+input,textarea { width:90%; padding:8px; margin-top:6px; border-radius:5px; border:1px solid #ccc; }
+textarea { height:80px; }
+.logo { max-width:150px; margin:10px auto; display:block; }
 </style>
 </head>
 <body>
 
+<img src="logo.png" class="logo">
 <h1>AcentoBus</h1>
 
-<!-- LOGIN -->
+<!-- LOGIN USUÁRIO -->
 <div class="box" id="loginUsuario">
   <h3>Reserva</h3>
-  <input id="nome" placeholder="Nome"><br><br>
+  <input id="nome" placeholder="Nome"><br>
   <input id="codigo" placeholder="Código"><br><br>
-  <button onclick="mostrarOnibus()">Entrar</button><br><br>
-  <button onclick="abrirSugestoes()">Sugestões / Reclamações</button>
+  <button onclick="entrarUsuario()">Entrar</button><br>
+  <button onclick="abrirSugestoes()">Sugestões / Reclamações</button><br><br>
+  <button onclick="mostrarLoginAdmin()">Sou Administrador</button>
+</div>
+
+<!-- LOGIN ADMIN -->
+<div class="box hidden" id="loginAdmin">
+  <h3>Login do Administrador</h3>
+  <input id="adminUser" placeholder="Usuário"><br>
+  <input id="adminPass" type="password" placeholder="Senha"><br><br>
+  <button onclick="entrarAdmin()">Entrar</button><br>
+  <button onclick="voltarUsuario()">Voltar</button>
+</div>
+
+<!-- PAINEL ADMIN -->
+<div class="box hidden" id="painelAdmin">
+  <h3>Painel do Administrador</h3>
+
+  <h4>Configurar Ônibus</h4>
+  <div id="configOnibus"></div>
+  <button onclick="salvarOnibus()">Salvar Ônibus</button><br><br>
+
+  <h4>Reservas</h4>
+  <div id="listaReservas"></div>
+  <button onclick="limparReservas()">Limpar Reservas do Dia</button><br><br>
+
+  <h4>Mensagens</h4>
+  <div id="listaFeedbacks"></div>
+  <button onclick="limparFeedbacks()">Limpar Sugestões/Reclamações</button><br><br>
+
+  <h4>Alterar Senha</h4>
+  <input id="novaSenha" type="password" placeholder="Nova senha">
+  <button onclick="trocarSenha()">Salvar nova senha</button><br><br>
+
+  <button onclick="logoutAdmin()">Sair</button>
 </div>
 
 <!-- TELA ÔNIBUS -->
 <div class="box hidden" id="telaOnibus"></div>
 
-<!-- TELA LISTA -->
+<!-- TELA LISTA DE NOMES -->
 <div class="box hidden" id="telaLista"></div>
 
 <!-- TELA SUGESTÕES -->
@@ -40,6 +79,10 @@ textarea { width:90%; height:80px; }
 </div>
 
 <script>
+// CONFIGURAÇÕES INICIAIS
+const ADMIN_USER="smechaval";
+let ADMIN_PASS=localStorage.getItem("adminPass")||"smech@v@l";
+
 const onibusPadrao = {
   1:{nome:"Ônibus 1", vagas:5, lista:[]},
   2:{nome:"Ônibus 2", vagas:5, lista:[]},
@@ -58,84 +101,22 @@ function verificarNovoDia(){
     localStorage.setItem("dataSistema", hoje);
   }
 }
-
 verificarNovoDia();
 
+// VARIÁVEIS GLOBAIS
 let onibus = JSON.parse(localStorage.getItem("onibus")) || onibusPadrao;
 let reservas = JSON.parse(localStorage.getItem("reservas")) || {};
+let feedbacks = JSON.parse(localStorage.getItem("sugestoes")) || {};
+let usuarioAtual=null;
 
+// FUNÇÕES GERAIS
 function esconderTudo(){
   document.getElementById("loginUsuario").classList.add("hidden");
+  document.getElementById("loginAdmin").classList.add("hidden");
+  document.getElementById("painelAdmin").classList.add("hidden");
   document.getElementById("telaOnibus").classList.add("hidden");
   document.getElementById("telaLista").classList.add("hidden");
   document.getElementById("telaSugestao").classList.add("hidden");
-}
-
-function mostrarOnibus(){
-  esconderTudo();
-  const tela = document.getElementById("telaOnibus");
-  tela.classList.remove("hidden");
-  tela.innerHTML="<h3>Escolha seu ônibus</h3>";
-
-  for(let i in onibus){
-    let btn=document.createElement("button");
-    btn.innerText=`${onibus[i].nome} - ${onibus[i].vagas} vagas`;
-    btn.onclick=()=>reservar(i);
-    tela.appendChild(btn);
-  }
-
-  let voltar=document.createElement("button");
-  voltar.innerText="Retornar";
-  voltar.onclick=voltarInicio;
-  tela.appendChild(document.createElement("br"));
-  tela.appendChild(voltar);
-}
-
-function reservar(id){
-  const nome=document.getElementById("nome").value;
-  const codigo=document.getElementById("codigo").value;
-
-  if(!nome||!codigo){alert("Preencha tudo");return;}
-
-  if(reservas[codigo]){
-    let antigo=reservas[codigo].onibus;
-    onibus[antigo].vagas++;
-    onibus[antigo].lista = onibus[antigo].lista.filter(n=>n!==reservas[codigo].nome);
-  }
-
-  if(onibus[id].vagas<=0){alert("Sem vagas");return;}
-
-  reservas[codigo]={nome:nome,onibus:id};
-  onibus[id].vagas--;
-  onibus[id].lista.push(nome);
-
-  localStorage.setItem("reservas",JSON.stringify(reservas));
-  localStorage.setItem("onibus",JSON.stringify(onibus));
-
-  mostrarLista(id);
-}
-
-function mostrarLista(id){
-  esconderTudo();
-  const tela=document.getElementById("telaLista");
-  tela.classList.remove("hidden");
-  tela.innerHTML=`<h3>${onibus[id].nome}</h3>`;
-
-  onibus[id].lista.forEach(n=>{
-    let p=document.createElement("p");
-    p.innerText=n;
-    tela.appendChild(p);
-  });
-
-  let voltar=document.createElement("button");
-  voltar.innerText="Retornar";
-  voltar.onclick=voltarInicio;
-  tela.appendChild(voltar);
-}
-
-function abrirSugestoes(){
-  esconderTudo();
-  document.getElementById("telaSugestao").classList.remove("hidden");
 }
 
 function voltarInicio(){
@@ -143,14 +124,125 @@ function voltarInicio(){
   document.getElementById("loginUsuario").classList.remove("hidden");
 }
 
+// LOGIN USUÁRIO
+function entrarUsuario(){
+  const hora = new Date().getHours();
+  if(hora<8 || hora>=17){alert("Reservas apenas das 08h às 17h"); return;}
+  const nome=document.getElementById("nome").value;
+  const codigo=document.getElementById("codigo").value;
+  if(!nome||!codigo){alert("Preencha tudo"); return;}
+  usuarioAtual={nome:nome,codigo:codigo};
+  mostrarOnibus();
+}
+
+// LOGIN ADMIN
+function mostrarLoginAdmin(){esconderTudo();document.getElementById("loginAdmin").classList.remove("hidden");}
+function voltarUsuario(){esconderTudo();document.getElementById("loginUsuario").classList.remove("hidden");}
+function entrarAdmin(){
+  const u=document.getElementById("adminUser").value;
+  const p=document.getElementById("adminPass").value;
+  if(u===ADMIN_USER && p===ADMIN_PASS){
+    esconderTudo();
+    document.getElementById("painelAdmin").classList.remove("hidden");
+    carregarConfig();
+    listarReservasAdmin();
+    listarFeedbacks();
+  } else alert("Usuário ou senha incorretos");
+}
+function trocarSenha(){ADMIN_PASS=document.getElementById("novaSenha").value; localStorage.setItem("adminPass",ADMIN_PASS); alert("Senha alterada!");document.getElementById("novaSenha").value="";}
+function logoutAdmin(){esconderTudo();document.getElementById("loginUsuario").classList.remove("hidden");}
+
+// CONFIGURAR ÔNIBUS
+function carregarConfig(){
+  let html="";
+  for(let i in onibus){
+    html+=`${onibus[i].nome} - vagas: <input type="number" value="${onibus[i].vagas}" onchange="onibus[${i}].vagas=this.value"><br>`;
+  }
+  document.getElementById("configOnibus").innerHTML=html;
+}
+function salvarOnibus(){localStorage.setItem("onibus",JSON.stringify(onibus)); alert("Ônibus salvos!");}
+
+// LISTAR RESERVAS ADMIN
+function listarReservasAdmin(){
+  let html="";
+  for(let c in reservas){
+    html+=`${reservas[c].nome} → ${onibus[reservas[c].onibus].nome}<br>`;
+  }
+  document.getElementById("listaReservas").innerHTML=html||"Nenhuma reserva";
+}
+function limparReservas(){localStorage.removeItem("reservas"); reservas={}; onibus=JSON.parse(localStorage.getItem("onibus"))||onibusPadrao; localStorage.setItem("onibus",JSON.stringify(onibus)); listarReservasAdmin(); alert("Reservas apagadas!");}
+
+// LISTAR FEEDBACKS
+function listarFeedbacks(){ 
+  let s=JSON.parse(localStorage.getItem("sugestoes"))||[];
+  let html="";
+  s.forEach(f=>html+=`${f.data} - ${f.msg}<br>`);
+  document.getElementById("listaFeedbacks").innerHTML=html||"Nenhuma mensagem";
+}
+function limparFeedbacks(){localStorage.removeItem("sugestoes"); listarFeedbacks(); alert("Sugestões apagadas!");}
+
+// ESCOLHA ÔNIBUS
+function mostrarOnibus(){
+  esconderTudo();
+  const tela=document.getElementById("telaOnibus");
+  tela.classList.remove("hidden");
+  tela.innerHTML="<h3>Escolha seu ônibus</h3>";
+  for(let i in onibus){
+    let btn=document.createElement("button");
+    btn.innerText=`${onibus[i].nome} - ${onibus[i].vagas} vagas`;
+    btn.onclick=()=>reservar(i);
+    tela.appendChild(btn);
+  }
+  let voltar=document.createElement("button");
+  voltar.innerText="Retornar";
+  voltar.onclick=voltarInicio;
+  tela.appendChild(document.createElement("br"));
+  tela.appendChild(voltar);
+}
+
+// RESERVAR
+function reservar(id){
+  if(reservas[usuarioAtual.codigo]){
+    let antigo=reservas[usuarioAtual.codigo].onibus;
+    onibus[antigo].vagas++;
+    onibus[antigo].lista = onibus[antigo].lista.filter(n=>n!==usuarioAtual.nome);
+  }
+  if(onibus[id].vagas<=0){alert("Sem vagas"); return;}
+  reservas[usuarioAtual.codigo]={nome:usuarioAtual.nome,onibus:id};
+  onibus[id].vagas--;
+  onibus[id].lista.push(usuarioAtual.nome);
+  localStorage.setItem("reservas",JSON.stringify(reservas));
+  localStorage.setItem("onibus",JSON.stringify(onibus));
+  mostrarLista(id);
+}
+
+// LISTA NOMES
+function mostrarLista(id){
+  esconderTudo();
+  const tela=document.getElementById("telaLista");
+  tela.classList.remove("hidden");
+  tela.innerHTML=`<h3>${onibus[id].nome}</h3>`;
+  onibus[id].lista.forEach(n=>{
+    let p=document.createElement("p");
+    p.innerText=n;
+    tela.appendChild(p);
+  });
+  let voltar=document.createElement("button");
+  voltar.innerText="Retornar";
+  voltar.onclick=voltarInicio;
+  tela.appendChild(voltar);
+}
+
+// SUGESTÕES
+function abrirSugestoes(){esconderTudo();document.getElementById("telaSugestao").classList.remove("hidden");}
 function enviarSugestao(){
   let texto=document.getElementById("sugestao").value;
-  if(!texto)return;
+  if(!texto){alert("Digite algo"); return;}
   let s=JSON.parse(localStorage.getItem("sugestoes"))||[];
   s.push({msg:texto,data:new Date().toLocaleDateString()});
   localStorage.setItem("sugestoes",JSON.stringify(s));
-  alert("Enviado!");
   document.getElementById("sugestao").value="";
+  alert("Enviado!");
 }
 </script>
 </body>
