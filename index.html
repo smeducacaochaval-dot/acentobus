@@ -6,8 +6,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{font-family:Arial;background:#1976d2;color:white;text-align:center}
-.card{background:white;color:black;margin:40px auto;padding:20px;border-radius:15px;width:300px}
-input,button{width:100%;padding:10px;margin-top:10px}
+.card{background:white;color:black;margin:40px auto;padding:20px;border-radius:15px;width:320px}
+input,button{width:100%;padding:8px;margin-top:6px}
 button{background:#1976d2;color:white;border:none;border-radius:8px}
 .hidden{display:none}
 </style>
@@ -38,6 +38,10 @@ button{background:#1976d2;color:white;border:none;border-radius:8px}
   <input id="novaSenha" type="password" placeholder="Nova senha">
   <button onclick="trocarSenha()">Salvar nova senha</button>
 
+  <h4>Configurar ônibus</h4>
+  <div id="configOnibus"></div>
+  <button onclick="salvarOnibus()">Salvar configurações</button>
+
   <br><br>
   <button onclick="sair()">Sair</button>
 </div>
@@ -52,57 +56,76 @@ button{background:#1976d2;color:white;border:none;border-radius:8px}
 const ADMIN_USER = "smechaval";
 let ADMIN_PASS = localStorage.getItem("adminPass") || "smech@v@l";
 
+let onibus = JSON.parse(localStorage.getItem("onibus")) || [
+  {nome:"Ônibus 1", vagas:10},
+  {nome:"Ônibus 2", vagas:10},
+  {nome:"Ônibus 3", vagas:10},
+  {nome:"Ônibus 4", vagas:10},
+  {nome:"Ônibus 5", vagas:10}
+];
+
 function mostrarAdmin(){
-  document.getElementById("loginUser").classList.add("hidden");
-  document.getElementById("loginAdmin").classList.remove("hidden");
+  loginUser.classList.add("hidden");
+  loginAdmin.classList.remove("hidden");
 }
 
 function voltar(){
-  document.getElementById("loginAdmin").classList.add("hidden");
-  document.getElementById("loginUser").classList.remove("hidden");
+  loginAdmin.classList.add("hidden");
+  loginUser.classList.remove("hidden");
 }
 
 function entrarAdmin(){
-  const u = document.getElementById("adminUser").value;
-  const p = document.getElementById("adminPass").value;
-
-  if(u === ADMIN_USER && p === ADMIN_PASS){
-    document.getElementById("loginAdmin").classList.add("hidden");
-    document.getElementById("painelAdmin").classList.remove("hidden");
-  } else {
-    alert("Usuário ou senha incorretos");
-  }
+  if(adminUser.value===ADMIN_USER && adminPass.value===ADMIN_PASS){
+    loginAdmin.classList.add("hidden");
+    painelAdmin.classList.remove("hidden");
+    carregarConfigOnibus();
+  } else alert("Usuário ou senha incorretos");
 }
 
 function trocarSenha(){
-  const nova = document.getElementById("novaSenha").value;
-  if(!nova){ alert("Digite a nova senha"); return; }
-  ADMIN_PASS = nova;
-  localStorage.setItem("adminPass", nova);
-  alert("Senha alterada com sucesso!");
-  document.getElementById("novaSenha").value = "";
+  if(!novaSenha.value){alert("Digite a nova senha");return;}
+  ADMIN_PASS=novaSenha.value;
+  localStorage.setItem("adminPass",ADMIN_PASS);
+  alert("Senha alterada!");
+  novaSenha.value="";
 }
 
 function entrarUsuario(){
-  const nome=document.getElementById("nome").value;
-  const codigo=document.getElementById("codigo").value;
-  if(!nome||!codigo){alert("Preencha os campos");return;}
-  document.getElementById("loginUser").classList.add("hidden");
-  document.getElementById("painelUser").classList.remove("hidden");
-  carregarOnibus();
+  if(!nome.value||!codigo.value){alert("Preencha os campos");return;}
+  loginUser.classList.add("hidden");
+  painelUser.classList.remove("hidden");
+  mostrarOnibusUsuario();
 }
 
-function sair(){
-  location.reload();
-}
+function sair(){location.reload();}
 
-function carregarOnibus(){
-  const onibus=["Ônibus 1","Ônibus 2","Ônibus 3","Ônibus 4","Ônibus 5"];
-  let html="";
-  onibus.forEach(o=>{
-    html+=`<button onclick="reservar('${o}')">${o}</button><br>`;
+function carregarConfigOnibus(){
+  configOnibus.innerHTML="";
+  onibus.forEach((o,i)=>{
+    configOnibus.innerHTML+=`
+      <input placeholder="Nome" value="${o.nome}" 
+        onchange="onibus[${i}].nome=this.value">
+      <input type="number" placeholder="Vagas" value="${o.vagas}" 
+        onchange="onibus[${i}].vagas=this.value">
+      <hr>
+    `;
   });
-  document.getElementById("listaOnibus").innerHTML=html;
+}
+
+function salvarOnibus(){
+  localStorage.setItem("onibus",JSON.stringify(onibus));
+  alert("Configurações salvas!");
+}
+
+function mostrarOnibusUsuario(){
+  listaOnibus.innerHTML="";
+  onibus.forEach(o=>{
+    listaOnibus.innerHTML+=`
+      <button onclick="reservar('${o.nome}')">
+        ${o.nome} (Vagas: ${o.vagas})
+      </button><br>
+    `;
+  });
 }
 
 function reservar(o){
