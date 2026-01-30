@@ -15,6 +15,9 @@ button:hover { background:#1565c0; }
 input,textarea { width:90%; padding:8px; margin-top:6px; border-radius:5px; border:1px solid #ccc; }
 textarea { height:80px; }
 .logo { max-width:150px; margin:10px auto; display:block; }
+.tab { background:#0d47a1; color:white; padding:8px 12px; margin:2px; display:inline-block; cursor:pointer; border-radius:6px; }
+.tab:hover { background:#1565c0; }
+.activeTab { background:#82b1ff; color:#000; }
 </style>
 </head>
 <body>
@@ -49,8 +52,9 @@ textarea { height:80px; }
   <div id="configOnibus"></div>
   <button onclick="salvarOnibus()">Salvar Ônibus</button><br><br>
 
-  <h4>Reservas</h4>
-  <div id="listaReservas"></div>
+  <h4>Reservas por Ônibus</h4>
+  <div id="abasOnibus"></div>
+  <div id="conteudoOnibus"></div>
   <button onclick="limparReservas()">Limpar Reservas do Dia</button><br><br>
 
   <h4>Mensagens</h4>
@@ -84,13 +88,14 @@ const ADMIN_USER="smechaval";
 let ADMIN_PASS=localStorage.getItem("adminPass")||"smech@v@l";
 
 const onibusPadrao = {
-  1:{nome:"Ônibus 1", vagas:5, lista:[]},
-  2:{nome:"Ônibus 2", vagas:5, lista:[]},
-  3:{nome:"Ônibus 3", vagas:5, lista:[]},
-  4:{nome:"Ônibus 4", vagas:5, lista:[]},
-  5:{nome:"Ônibus 5", vagas:5, lista:[]}
+  1:{nome:"Ônibus 1", rota:"Chaval → Escola", vagas:5, lista:[]},
+  2:{nome:"Ônibus 2", rota:"Chaval → Escola", vagas:5, lista:[]},
+  3:{nome:"Ônibus 3", rota:"Chaval → Escola", vagas:5, lista:[]},
+  4:{nome:"Ônibus 4", rota:"Chaval → Escola", vagas:5, lista:[]},
+  5:{nome:"Ônibus 5", rota:"Chaval → Escola", vagas:5, lista:[]}
 };
 
+// LIMPEZA DIÁRIA
 function verificarNovoDia(){
   const hoje = new Date().toLocaleDateString();
   const salvo = localStorage.getItem("dataSistema");
@@ -103,10 +108,8 @@ function verificarNovoDia(){
 }
 verificarNovoDia();
 
-// VARIÁVEIS GLOBAIS
 let onibus = JSON.parse(localStorage.getItem("onibus")) || onibusPadrao;
 let reservas = JSON.parse(localStorage.getItem("reservas")) || {};
-let feedbacks = JSON.parse(localStorage.getItem("sugestoes")) || {};
 let usuarioAtual=null;
 
 // FUNÇÕES GERAIS
@@ -118,7 +121,6 @@ function esconderTudo(){
   document.getElementById("telaLista").classList.add("hidden");
   document.getElementById("telaSugestao").classList.add("hidden");
 }
-
 function voltarInicio(){
   esconderTudo();
   document.getElementById("loginUsuario").classList.remove("hidden");
@@ -147,30 +149,48 @@ function entrarAdmin(){
     carregarConfig();
     listarReservasAdmin();
     listarFeedbacks();
+    gerarAbasOnibus();
   } else alert("Usuário ou senha incorretos");
 }
 function trocarSenha(){ADMIN_PASS=document.getElementById("novaSenha").value; localStorage.setItem("adminPass",ADMIN_PASS); alert("Senha alterada!");document.getElementById("novaSenha").value="";}
 function logoutAdmin(){esconderTudo();document.getElementById("loginUsuario").classList.remove("hidden");}
 
-// CONFIGURAR ÔNIBUS
+// CONFIGURAR ÔNIBUS COM NOME, ROTA E VAGAS
 function carregarConfig(){
   let html="";
   for(let i in onibus){
-    html+=`${onibus[i].nome} - vagas: <input type="number" value="${onibus[i].vagas}" onchange="onibus[${i}].vagas=this.value"><br>`;
+    html+=`
+      <div>
+        <b>Ônibus ${i}:</b><br>
+        Nome: <input type="text" id="nomeOnibus${i}" value="${onibus[i].nome}"><br>
+        Rota: <input type="text" id="rotaOnibus${i}" value="${onibus[i].rota||''}"><br>
+        Vagas: <input type="number" id="vagasOnibus${i}" value="${onibus[i].vagas}"><br><br>
+      </div>
+    `;
   }
   document.getElementById("configOnibus").innerHTML=html;
 }
-function salvarOnibus(){localStorage.setItem("onibus",JSON.stringify(onibus)); alert("Ônibus salvos!");}
+function salvarOnibus(){
+  for(let i in onibus){
+    onibus[i].nome = document.getElementById(`nomeOnibus${i}`).value || `Ônibus ${i}`;
+    onibus[i].rota = document.getElementById(`rotaOnibus${i}`).value || "";
+    onibus[i].vagas = parseInt(document.getElementById(`vagasOnibus${i}`).value) || 0;
+  }
+  localStorage.setItem("onibus",JSON.stringify(onibus));
+  alert("Ônibus atualizados!");
+  listarReservasAdmin();
+  gerarAbasOnibus();
+}
 
 // LISTAR RESERVAS ADMIN
 function listarReservasAdmin(){
   let html="";
   for(let c in reservas){
-    html+=`${reservas[c].nome} → ${onibus[reservas[c].onibus].nome}<br>`;
+    html+=`${reservas[c].nome} → ${onibus[reservas[c].onibus].nome} (${onibus[reservas[c].onibus].rota})<br>`;
   }
   document.getElementById("listaReservas").innerHTML=html||"Nenhuma reserva";
 }
-function limparReservas(){localStorage.removeItem("reservas"); reservas={}; onibus=JSON.parse(localStorage.getItem("onibus"))||onibusPadrao; localStorage.setItem("onibus",JSON.stringify(onibus)); listarReservasAdmin(); alert("Reservas apagadas!");}
+function limparReservas(){localStorage.removeItem("reservas"); reservas={}; onibus=JSON.parse(localStorage.getItem("onibus"))||onibusPadrao; localStorage.setItem("onibus",JSON.stringify(onibus)); listarReservasAdmin(); gerarAbasOnibus(); alert("Reservas apagadas!");}
 
 // LISTAR FEEDBACKS
 function listarFeedbacks(){ 
@@ -189,7 +209,7 @@ function mostrarOnibus(){
   tela.innerHTML="<h3>Escolha seu ônibus</h3>";
   for(let i in onibus){
     let btn=document.createElement("button");
-    btn.innerText=`${onibus[i].nome} - ${onibus[i].vagas} vagas`;
+    btn.innerText=`${onibus[i].nome} - ${onibus[i].rota} - ${onibus[i].vagas} vagas`;
     btn.onclick=()=>reservar(i);
     tela.appendChild(btn);
   }
@@ -221,7 +241,7 @@ function mostrarLista(id){
   esconderTudo();
   const tela=document.getElementById("telaLista");
   tela.classList.remove("hidden");
-  tela.innerHTML=`<h3>${onibus[id].nome}</h3>`;
+  tela.innerHTML=`<h3>${onibus[id].nome} (${onibus[id].rota})</h3>`;
   onibus[id].lista.forEach(n=>{
     let p=document.createElement("p");
     p.innerText=n;
@@ -243,6 +263,41 @@ function enviarSugestao(){
   localStorage.setItem("sugestoes",JSON.stringify(s));
   document.getElementById("sugestao").value="";
   alert("Enviado!");
+}
+
+// NOVO: ABAS POR ÔNIBUS NO ADMIN
+function gerarAbasOnibus(){
+  const container=document.getElementById("abasOnibus");
+  const conteudo=document.getElementById("conteudoOnibus");
+  container.innerHTML="";
+  conteudo.innerHTML="";
+  for(let i in onibus){
+    let tab=document.createElement("div");
+    tab.className="tab";
+    tab.innerText=`${onibus[i].nome}`;
+    tab.onclick=()=>{
+      let tabs=document.querySelectorAll(".tab");
+      tabs.forEach(t=>t.classList.remove("activeTab"));
+      tab.classList.add("activeTab");
+      mostrarListaOnibus(i);
+    }
+    container.appendChild(tab);
+  }
+}
+
+// MOSTRAR LISTA DE PASSAGEIROS NO ADMIN
+function mostrarListaOnibus(id){
+  const conteudo=document.getElementById("conteudoOnibus");
+  conteudo.innerHTML=`<h4>${onibus[id].nome} (${onibus[id].rota})</h4>`;
+  if(onibus[id].lista.length===0){
+    conteudo.innerHTML+="Nenhum passageiro";
+  } else {
+    onibus[id].lista.forEach(n=>{
+      let p=document.createElement("p");
+      p.innerText=n;
+      conteudo.appendChild(p);
+    });
+  }
 }
 </script>
 </body>
