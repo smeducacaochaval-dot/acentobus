@@ -238,12 +238,31 @@ function cadastrarUsuario(){
   listarUsuariosAdmin();
 }
 
+// LISTAR USUÁRIOS COM BOTÃO EXCLUIR
 function listarUsuariosAdmin(){
   const container = document.getElementById("listaUsuarios");
   const usuarios = JSON.parse(localStorage.getItem("usuarios")) || {};
   container.innerHTML = "<b>Usuários cadastrados:</b><br>";
   for(let c in usuarios){
-    container.innerHTML += `${usuarios[c].nome} (Código: ${usuarios[c].codigo})<br>`;
+    let div = document.createElement("div");
+    div.style.marginBottom="5px";
+    div.innerHTML = `${usuarios[c].nome} (Código: ${usuarios[c].codigo}) `;
+    
+    // Botão de excluir
+    let btn = document.createElement("button");
+    btn.innerText = "Excluir";
+    btn.style.background="#c62828";
+    btn.style.marginLeft="5px";
+    btn.onclick = ()=>{
+      if(confirm(`Deseja realmente excluir o usuário ${usuarios[c].nome}?`)){
+        delete usuarios[c];
+        localStorage.setItem("usuarios", JSON.stringify(usuarios));
+        listarUsuariosAdmin(); // atualizar a lista
+      }
+    }
+    
+    div.appendChild(btn);
+    container.appendChild(div);
   }
 }
 
