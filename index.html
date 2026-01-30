@@ -6,8 +6,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{font-family:Arial;background:#1976d2;color:white;text-align:center}
-.card{background:white;color:black;margin:30px auto;padding:20px;border-radius:15px;width:330px}
-input,button{width:100%;padding:8px;margin-top:8px}
+.card{background:white;color:black;margin:20px auto;padding:15px;border-radius:15px;width:340px}
+input,button{width:100%;padding:8px;margin-top:6px}
 button{background:#1976d2;color:white;border:none;border-radius:8px}
 .hidden{display:none}
 small{color:#555}
@@ -48,6 +48,11 @@ small{color:#555}
 
   <hr>
 
+  <h4>Reservas</h4>
+  <div id="listaReservas"></div>
+
+  <hr>
+
   <h4>Alterar senha</h4>
   <input id="novaSenha" type="password" placeholder="Nova senha">
   <button onclick="trocarSenha()">Salvar nova senha</button>
@@ -75,6 +80,7 @@ let onibus=JSON.parse(localStorage.getItem("onibus"))||[
 ];
 
 let codigos=JSON.parse(localStorage.getItem("codigos"))||[];
+let reservas=JSON.parse(localStorage.getItem("reservas"))||[];
 
 function mostrarAdmin(){
  loginUser.classList.add("hidden");
@@ -92,6 +98,7 @@ function entrarAdmin(){
   painelAdmin.classList.remove("hidden");
   carregarConfig();
   listarCodigos();
+  listarReservas();
  } else alert("Usuário ou senha incorretos");
 }
 
@@ -144,10 +151,22 @@ function removerCodigo(i){
  listarCodigos();
 }
 
+function listarReservas(){
+ let html="";
+ reservas.forEach(r=>{
+  html+=`${r.nome} → ${r.onibus}<br>`;
+ });
+ listaReservas.innerHTML=html||"Nenhuma reserva ainda";
+}
+
 function entrarUsuario(){
  if(!nome.value||!codigo.value){alert("Preencha os campos");return;}
  if(!codigos.includes(codigo.value)){
   alert("Código inválido");
+  return;
+ }
+ if(reservas.find(r=>r.codigo===codigo.value)){
+  alert("Este código já foi usado");
   return;
  }
  loginUser.classList.add("hidden");
@@ -157,10 +176,24 @@ function entrarUsuario(){
 
 function listarOnibus(){
  let html="";
- onibus.forEach(o=>{
-  html+=`<button onclick="alert('Reservado em ${o.nome}')">${o.nome} (${o.vagas} vagas)</button><br>`;
+ onibus.forEach((o,i)=>{
+  const usados=reservas.filter(r=>r.onibus===o.nome).length;
+  const restantes=o.vagas-usados;
+  html+=`<button onclick="reservar(${i})">${o.nome} (${restantes} vagas)</button><br>`;
  });
  listaOnibus.innerHTML=html;
+}
+
+function reservar(i){
+ const usados=reservas.filter(r=>r.onibus===onibus[i].nome).length;
+ if(usados>=onibus[i].vagas){
+  alert("Ônibus lotado");
+  return;
+ }
+ reservas.push({nome:nome.value,codigo:codigo.value,onibus:onibus[i].nome});
+ localStorage.setItem("reservas",JSON.stringify(reservas));
+ alert("Reserva confirmada!");
+ sair();
 }
 
 function sair(){location.reload();}
@@ -168,5 +201,3 @@ function sair(){location.reload();}
 
 </body>
 </html>
-
-
