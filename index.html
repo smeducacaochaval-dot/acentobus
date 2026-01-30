@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{font-family:Arial;background:#1976d2;color:white;text-align:center}
-.card{background:white;color:black;margin:30px auto;padding:20px;border-radius:15px;width:320px}
+.card{background:white;color:black;margin:30px auto;padding:20px;border-radius:15px;width:330px}
 input,button{width:100%;padding:8px;margin-top:8px}
 button{background:#1976d2;color:white;border:none;border-radius:8px}
 .hidden{display:none}
@@ -36,10 +36,15 @@ small{color:#555}
   <h3>Painel do Administrador</h3>
 
   <h4>Configurar ônibus</h4>
-
   <div id="configOnibus"></div>
+  <button onclick="salvarOnibus()">Salvar ônibus</button>
 
-  <button onclick="salvarOnibus()">Salvar configurações</button>
+  <hr>
+
+  <h4>Códigos dos usuários</h4>
+  <input id="novoCodigo" placeholder="Novo código">
+  <button onclick="adicionarCodigo()">Adicionar código</button>
+  <div id="listaCodigos"></div>
 
   <hr>
 
@@ -69,6 +74,8 @@ let onibus=JSON.parse(localStorage.getItem("onibus"))||[
  {nome:"Ônibus 5",vagas:40}
 ];
 
+let codigos=JSON.parse(localStorage.getItem("codigos"))||[];
+
 function mostrarAdmin(){
  loginUser.classList.add("hidden");
  loginAdmin.classList.remove("hidden");
@@ -84,6 +91,7 @@ function entrarAdmin(){
   loginAdmin.classList.add("hidden");
   painelAdmin.classList.remove("hidden");
   carregarConfig();
+  listarCodigos();
  } else alert("Usuário ou senha incorretos");
 }
 
@@ -109,11 +117,39 @@ function carregarConfig(){
 
 function salvarOnibus(){
  localStorage.setItem("onibus",JSON.stringify(onibus));
- alert("Configurações salvas!");
+ alert("Ônibus salvos!");
+}
+
+function adicionarCodigo(){
+ const c=novoCodigo.value.trim();
+ if(!c){alert("Digite um código");return;}
+ if(codigos.includes(c)){alert("Código já existe");return;}
+ codigos.push(c);
+ localStorage.setItem("codigos",JSON.stringify(codigos));
+ novoCodigo.value="";
+ listarCodigos();
+}
+
+function listarCodigos(){
+ let html="";
+ codigos.forEach((c,i)=>{
+  html+=`${c} <button onclick="removerCodigo(${i})">❌</button><br>`;
+ });
+ listaCodigos.innerHTML=html;
+}
+
+function removerCodigo(i){
+ codigos.splice(i,1);
+ localStorage.setItem("codigos",JSON.stringify(codigos));
+ listarCodigos();
 }
 
 function entrarUsuario(){
  if(!nome.value||!codigo.value){alert("Preencha os campos");return;}
+ if(!codigos.includes(codigo.value)){
+  alert("Código inválido");
+  return;
+ }
  loginUser.classList.add("hidden");
  painelUser.classList.remove("hidden");
  listarOnibus();
