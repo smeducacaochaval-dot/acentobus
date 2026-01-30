@@ -15,29 +15,67 @@ button{background:#1976d2;color:white;border:none;border-radius:8px}
 </head>
 <body>
 
-<div class="card" id="login">
+<div class="card" id="loginUser">
   <h2>AcentoBus</h2>
   <input id="nome" placeholder="Seu nome">
   <input id="codigo" placeholder="Seu código">
-  <button onclick="entrar()">Entrar</button>
+  <button onclick="entrarUsuario()">Entrar</button>
+  <br><br>
+  <button onclick="mostrarAdmin()">Sou Administrador</button>
 </div>
 
-<div class="card hidden" id="painel">
+<div class="card hidden" id="loginAdmin">
+  <h3>Login do Administrador</h3>
+  <input id="adminUser" placeholder="Usuário">
+  <input id="adminPass" type="password" placeholder="Senha">
+  <button onclick="entrarAdmin()">Entrar</button>
+  <button onclick="voltar()">Voltar</button>
+</div>
+
+<div class="card hidden" id="painelAdmin">
+  <h3>Painel do Administrador</h3>
+  <p>Bem-vindo, administrador.</p>
+  <button onclick="sair()">Sair</button>
+</div>
+
+<div class="card hidden" id="painelUser">
   <h3>Escolha o ônibus</h3>
   <div id="listaOnibus"></div>
   <button onclick="sair()">Sair</button>
 </div>
 
 <script>
-let usuario = {};
+const ADMIN_USER = "smechaval";
+const ADMIN_PASS = "smech@v@l";
 
-function entrar(){
+function mostrarAdmin(){
+  document.getElementById("loginUser").classList.add("hidden");
+  document.getElementById("loginAdmin").classList.remove("hidden");
+}
+
+function voltar(){
+  document.getElementById("loginAdmin").classList.add("hidden");
+  document.getElementById("loginUser").classList.remove("hidden");
+}
+
+function entrarAdmin(){
+  const u = document.getElementById("adminUser").value;
+  const p = document.getElementById("adminPass").value;
+
+  if(u === ADMIN_USER && p === ADMIN_PASS){
+    document.getElementById("loginAdmin").classList.add("hidden");
+    document.getElementById("painelAdmin").classList.remove("hidden");
+  } else {
+    alert("Usuário ou senha incorretos");
+  }
+}
+
+function entrarUsuario(){
   const nome=document.getElementById("nome").value;
   const codigo=document.getElementById("codigo").value;
   if(!nome||!codigo){alert("Preencha os campos");return;}
-  usuario={nome,codigo};
-  document.getElementById("login").classList.add("hidden");
-  document.getElementById("painel").classList.remove("hidden");
+  document.getElementById("loginUser").classList.add("hidden");
+  document.getElementById("painelUser").classList.remove("hidden");
   carregarOnibus();
 }
 
@@ -55,7 +93,7 @@ function carregarOnibus(){
 }
 
 function reservar(o){
-  alert("Reserva feita em: "+o+"\nNome: "+usuario.nome);
+  alert("Reserva feita em: "+o);
 }
 </script>
 
