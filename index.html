@@ -6,8 +6,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{font-family:Arial;background:#1976d2;color:white;text-align:center}
-.card{background:white;color:black;margin:20px auto;padding:15px;border-radius:15px;width:340px}
-input,button{width:100%;padding:8px;margin-top:6px}
+.card{background:white;color:black;margin:15px auto;padding:15px;border-radius:15px;width:350px}
+input,button,textarea{width:100%;padding:8px;margin-top:6px}
 button{background:#1976d2;color:white;border:none;border-radius:8px}
 .hidden{display:none}
 small{color:#555}
@@ -53,6 +53,11 @@ small{color:#555}
 
   <hr>
 
+  <h4>Sugestões e reclamações</h4>
+  <div id="listaFeedbacks"></div>
+
+  <hr>
+
   <h4>Alterar senha</h4>
   <input id="novaSenha" type="password" placeholder="Nova senha">
   <button onclick="trocarSenha()">Salvar nova senha</button>
@@ -64,6 +69,19 @@ small{color:#555}
 <div class="card hidden" id="painelUser">
   <h3>Escolha seu ônibus</h3>
   <div id="listaOnibus"></div>
+
+  <hr>
+
+  <h4>Meu histórico</h4>
+  <div id="meuHistorico"></div>
+
+  <hr>
+
+  <h4>Sugestão / Reclamação</h4>
+  <textarea id="mensagem" placeholder="Escreva aqui..."></textarea>
+  <button onclick="enviarMensagem()">Enviar</button>
+
+  <br><br>
   <button onclick="sair()">Sair</button>
 </div>
 
@@ -81,6 +99,7 @@ let onibus=JSON.parse(localStorage.getItem("onibus"))||[
 
 let codigos=JSON.parse(localStorage.getItem("codigos"))||[];
 let reservas=JSON.parse(localStorage.getItem("reservas"))||[];
+let feedbacks=JSON.parse(localStorage.getItem("feedbacks"))||[];
 
 function mostrarAdmin(){
  loginUser.classList.add("hidden");
@@ -99,6 +118,7 @@ function entrarAdmin(){
   carregarConfig();
   listarCodigos();
   listarReservas();
+  listarFeedbacks();
  } else alert("Usuário ou senha incorretos");
 }
 
@@ -156,22 +176,25 @@ function listarReservas(){
  reservas.forEach(r=>{
   html+=`${r.nome} → ${r.onibus}<br>`;
  });
- listaReservas.innerHTML=html||"Nenhuma reserva ainda";
+ listaReservas.innerHTML=html||"Nenhuma reserva";
+}
+
+function listarFeedbacks(){
+ let html="";
+ feedbacks.forEach(f=>{
+  html+=`${f.nome||"Anônimo"}: ${f.msg}<br>`;
+ });
+ listaFeedbacks.innerHTML=html||"Nenhuma mensagem";
 }
 
 function entrarUsuario(){
  if(!nome.value||!codigo.value){alert("Preencha os campos");return;}
- if(!codigos.includes(codigo.value)){
-  alert("Código inválido");
-  return;
- }
- if(reservas.find(r=>r.codigo===codigo.value)){
-  alert("Este código já foi usado");
-  return;
- }
+ if(!codigos.includes(codigo.value)){alert("Código inválido");return;}
+ if(reservas.find(r=>r.codigo===codigo.value)){alert("Este código já foi usado");return;}
  loginUser.classList.add("hidden");
  painelUser.classList.remove("hidden");
  listarOnibus();
+ listarHistorico();
 }
 
 function listarOnibus(){
@@ -186,14 +209,27 @@ function listarOnibus(){
 
 function reservar(i){
  const usados=reservas.filter(r=>r.onibus===onibus[i].nome).length;
- if(usados>=onibus[i].vagas){
-  alert("Ônibus lotado");
-  return;
- }
+ if(usados>=onibus[i].vagas){alert("Ônibus lotado");return;}
  reservas.push({nome:nome.value,codigo:codigo.value,onibus:onibus[i].nome});
  localStorage.setItem("reservas",JSON.stringify(reservas));
  alert("Reserva confirmada!");
- sair();
+ listarOnibus();
+ listarHistorico();
+}
+
+function listarHistorico(){
+ let html="";
+ reservas.filter(r=>r.codigo===codigo.value)
+ .forEach(r=>{html+=`${r.onibus}<br>`});
+ meuHistorico.innerHTML=html||"Nenhuma reserva";
+}
+
+function enviarMensagem(){
+ if(!mensagem.value){alert("Digite a mensagem");return;}
+ feedbacks.push({nome:nome.value,msg:mensagem.value});
+ localStorage.setItem("feedbacks",JSON.stringify(feedbacks));
+ mensagem.value="";
+ alert("Mensagem enviada!");
 }
 
 function sair(){location.reload();}
