@@ -8,19 +8,18 @@
 <style>
 body{font-family:Arial;background:#0d47a1;color:white;text-align:center}
 .header{background:white;color:#0d47a1;padding:10px;border-radius:15px;margin:10px}
-.header img{max-width:120px;margin-bottom:5px}
+.header img{max-width:120px}
 .card{background:white;color:black;margin:15px auto;padding:15px;border-radius:15px;width:360px}
 input,button,textarea{width:100%;padding:8px;margin-top:6px}
 button{background:#0d47a1;color:white;border:none;border-radius:8px}
 .hidden{display:none}
-small{color:#555}
 hr{margin:10px 0}
 </style>
 </head>
 <body>
 
 <div class="header">
-  <img src="logo.png" alt="Logo">
+  <img src="logo.png">
   <h2>AcentoBus</h2>
 </div>
 
@@ -49,9 +48,9 @@ hr{margin:10px 0}
 
   <hr>
 
-  <h4>Códigos dos usuários</h4>
+  <h4>Códigos</h4>
   <input id="novoCodigo" placeholder="Novo código">
-  <button onclick="adicionarCodigo()">Adicionar código</button>
+  <button onclick="adicionarCodigo()">Adicionar</button>
   <div id="listaCodigos"></div>
 
   <hr>
@@ -59,6 +58,11 @@ hr{margin:10px 0}
   <h4>Reservas</h4>
   <div id="listaReservas"></div>
   <button onclick="limparReservas()">🧹 Limpar reservas do dia</button>
+
+  <hr>
+
+  <h4>Mensagens</h4>
+  <div id="listaFeedbacks"></div>
 
   <hr>
 
@@ -71,18 +75,23 @@ hr{margin:10px 0}
 </div>
 
 <div class="card hidden" id="painelUser">
-  <h3>Minha reserva</h3>
-  <div id="statusReserva"></div>
+  <h3>Escolha seu ônibus</h3>
+  <div id="listaOnibus"></div>
+  <button onclick="sair()">Sair</button>
+</div>
+
+<div class="card hidden" id="paginaOnibus">
+  <h3 id="tituloOnibus"></h3>
+  <div id="listaNomes"></div>
 
   <hr>
 
-  <h4>Escolher / Trocar ônibus</h4>
-  <div id="listaOnibus"></div>
-
-  <button onclick="cancelarReserva()">Cancelar reserva</button>
+  <h4>Sugestão / Reclamação</h4>
+  <textarea id="mensagem" placeholder="Escreva aqui..."></textarea>
+  <button onclick="enviarMensagem()">Enviar</button>
 
   <br><br>
-  <button onclick="sair()">Sair</button>
+  <button onclick="voltarOnibus()">Voltar</button>
 </div>
 
 <script>
@@ -99,12 +108,13 @@ let onibus=JSON.parse(localStorage.getItem("onibus"))||[
 
 let codigos=JSON.parse(localStorage.getItem("codigos"))||[];
 let reservas=JSON.parse(localStorage.getItem("reservas"))||[];
+let feedbacks=JSON.parse(localStorage.getItem("feedbacks"))||[];
 
 let usuarioAtual=null;
+let onibusAtual=null;
 
 function dentroDoHorario(){
- const agora=new Date();
- const h=agora.getHours();
+ const h=new Date().getHours();
  return h>=8 && h<17;
 }
 
@@ -112,7 +122,6 @@ function mostrarAdmin(){
  loginUser.classList.add("hidden");
  loginAdmin.classList.remove("hidden");
 }
-
 function voltar(){
  loginAdmin.classList.add("hidden");
  loginUser.classList.remove("hidden");
@@ -125,11 +134,11 @@ function entrarAdmin(){
   carregarConfig();
   listarCodigos();
   listarReservas();
+  listarFeedbacks();
  } else alert("Usuário ou senha incorretos");
 }
 
 function trocarSenha(){
- if(!novaSenha.value){alert("Digite a nova senha");return;}
  ADMIN_PASS=novaSenha.value;
  localStorage.setItem("adminPass",ADMIN_PASS);
  alert("Senha alterada!");
@@ -139,11 +148,8 @@ function trocarSenha(){
 function carregarConfig(){
  let html="";
  onibus.forEach((o,i)=>{
-  html+=`
-   <small>Ônibus ${i+1}</small>
-   <input value="${o.nome}" onchange="onibus[${i}].nome=this.value">
-   <input type="number" value="${o.vagas}" onchange="onibus[${i}].vagas=this.value">
-   <br>`;
+  html+=`<input value="${o.nome}" onchange="onibus[${i}].nome=this.value">
+         <input type="number" value="${o.vagas}" onchange="onibus[${i}].vagas=this.value"><br>`;
  });
  configOnibus.innerHTML=html;
 }
@@ -155,8 +161,7 @@ function salvarOnibus(){
 
 function adicionarCodigo(){
  const c=novoCodigo.value.trim();
- if(!c){alert("Digite um código");return;}
- if(codigos.includes(c)){alert("Código já existe");return;}
+ if(!c)return;
  codigos.push(c);
  localStorage.setItem("codigos",JSON.stringify(codigos));
  novoCodigo.value="";
@@ -180,75 +185,73 @@ function removerCodigo(i){
 function listarReservas(){
  let html="";
  reservas.forEach(r=>{
-  html+=`${r.nome} (${r.codigo}) → ${r.onibus}<br>`;
+  html+=`${r.nome} → ${r.onibus}<br>`;
  });
- listaReservas.innerHTML=html||"Nenhuma reserva";
+ listaReservas.innerHTML=html||"Nenhuma";
 }
 
 function limparReservas(){
- if(confirm("Apagar todas as reservas do dia?")){
-  reservas=[];
-  localStorage.setItem("reservas",JSON.stringify(reservas));
-  listarReservas();
-  alert("Reservas apagadas!");
- }
+ reservas=[];
+ localStorage.setItem("reservas",JSON.stringify(reservas));
+ listarReservas();
+ alert("Reservas apagadas!");
+}
+
+function listarFeedbacks(){
+ let html="";
+ feedbacks.forEach(f=>{
+  html+=`${f.onibus||""} - ${f.nome}: ${f.msg}<br>`;
+ });
+ listaFeedbacks.innerHTML=html||"Nenhuma mensagem";
 }
 
 function entrarUsuario(){
- if(!dentroDoHorario()){
-  alert("Reservas permitidas somente das 08:00 às 17:00");
-  return;
- }
-
- if(!nome.value||!codigo.value){alert("Preencha os campos");return;}
+ if(!dentroDoHorario()){alert("Somente das 08h às 17h");return;}
+ if(!nome.value||!codigo.value){alert("Preencha");return;}
  if(!codigos.includes(codigo.value)){alert("Código inválido");return;}
 
  usuarioAtual={nome:nome.value,codigo:codigo.value};
-
  loginUser.classList.add("hidden");
  painelUser.classList.remove("hidden");
-
- atualizarStatusReserva();
  listarOnibus();
-}
-
-function atualizarStatusReserva(){
- const r=reservas.find(r=>r.codigo===usuarioAtual.codigo);
- if(r){
-  statusReserva.innerHTML=`Você reservou no: <b>${r.onibus}</b>`;
- } else {
-  statusReserva.innerHTML="Você ainda não tem reserva.";
- }
 }
 
 function listarOnibus(){
  let html="";
  onibus.forEach((o,i)=>{
-  const usados=reservas.filter(r=>r.onibus===o.nome).length;
-  const restantes=o.vagas-usados;
-  html+=`<button onclick="reservar(${i})">${o.nome} (${restantes} vagas)</button><br>`;
+  html+=`<button onclick="abrirOnibus(${i})">${o.nome}</button><br>`;
  });
  listaOnibus.innerHTML=html;
 }
 
-function reservar(i){
+function abrirOnibus(i){
+ onibusAtual=onibus[i].nome;
  const atual=reservas.find(r=>r.codigo===usuarioAtual.codigo);
- if(atual){
-  atual.onibus=onibus[i].nome;
- } else {
-  reservas.push({nome:usuarioAtual.nome,codigo:usuarioAtual.codigo,onibus:onibus[i].nome});
- }
+ if(atual) atual.onibus=onibusAtual;
+ else reservas.push({nome:usuarioAtual.nome,codigo:usuarioAtual.codigo,onibus:onibusAtual});
  localStorage.setItem("reservas",JSON.stringify(reservas));
- alert("Reserva atualizada!");
- atualizarStatusReserva();
- listarOnibus();
+
+ painelUser.classList.add("hidden");
+ paginaOnibus.classList.remove("hidden");
+ tituloOnibus.innerText=onibusAtual;
+ listarNomes();
 }
 
-function cancelarReserva(){
- reservas=reservas.filter(r=>r.codigo!==usuarioAtual.codigo);
- localStorage.setItem("reservas",JSON.stringify(reservas));
- alert("Reserva cancelada!");
- atualizarStatusReserva();
+function listarNomes(){
+ const nomes=reservas.filter(r=>r.onibus===onibusAtual).map(r=>r.nome);
+ listaNomes.innerHTML=nomes.join("<br>")||"Nenhum ainda";
+}
+
+function enviarMensagem(){
+ feedbacks.push({onibus:onibusAtual,nome:usuarioAtual.nome,msg:mensagem.value});
+ localStorage.setItem("feedbacks",JSON.stringify(feedbacks));
+ mensagem.value="";
+ alert("Mensagem enviada!");
+}
+
+function voltarOnibus(){
+ paginaOnibus.classList.add("hidden");
+ painelUser.classList.remove("hidden");
  listarOnibus();
 }
 
@@ -257,5 +260,7 @@ function sair(){location.reload();}
 
 </body>
 </html>
+
+
 
 
