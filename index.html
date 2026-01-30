@@ -5,10 +5,12 @@
 <title>AcentoBus</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-body{font-family:Arial;background:#1976d2;color:white;text-align:center}
+body{font-family:Arial;background:#0d47a1;color:white;text-align:center}
+.header{background:white;color:#0d47a1;padding:10px;border-radius:15px;margin:10px}
+.header img{max-width:120px;margin-bottom:5px}
 .card{background:white;color:black;margin:15px auto;padding:15px;border-radius:15px;width:360px}
 input,button,textarea{width:100%;padding:8px;margin-top:6px}
-button{background:#1976d2;color:white;border:none;border-radius:8px}
+button{background:#0d47a1;color:white;border:none;border-radius:8px}
 .hidden{display:none}
 small{color:#555}
 hr{margin:10px 0}
@@ -16,8 +18,12 @@ hr{margin:10px 0}
 </head>
 <body>
 
-<div class="card" id="loginUser">
+<div class="header">
+  <img src="logo.png" alt="Logo">
   <h2>AcentoBus</h2>
+</div>
+
+<div class="card" id="loginUser">
   <input id="nome" placeholder="Seu nome">
   <input id="codigo" placeholder="Seu código">
   <button onclick="entrarUsuario()">Entrar</button>
@@ -55,11 +61,6 @@ hr{margin:10px 0}
 
   <hr>
 
-  <h4>Sugestões e reclamações</h4>
-  <div id="listaFeedbacks"></div>
-
-  <hr>
-
   <h4>Alterar senha</h4>
   <input id="novaSenha" type="password" placeholder="Nova senha">
   <button onclick="trocarSenha()">Salvar nova senha</button>
@@ -79,12 +80,6 @@ hr{margin:10px 0}
 
   <button onclick="cancelarReserva()">Cancelar reserva</button>
 
-  <hr>
-
-  <h4>Sugestão / Reclamação</h4>
-  <textarea id="mensagem" placeholder="Escreva aqui..."></textarea>
-  <button onclick="enviarMensagem()">Enviar</button>
-
   <br><br>
   <button onclick="sair()">Sair</button>
 </div>
@@ -103,9 +98,14 @@ let onibus=JSON.parse(localStorage.getItem("onibus"))||[
 
 let codigos=JSON.parse(localStorage.getItem("codigos"))||[];
 let reservas=JSON.parse(localStorage.getItem("reservas"))||[];
-let feedbacks=JSON.parse(localStorage.getItem("feedbacks"))||[];
 
 let usuarioAtual=null;
+
+function dentroDoHorario(){
+ const agora=new Date();
+ const h=agora.getHours();
+ return h>=8 && h<17;
+}
 
 function mostrarAdmin(){
  loginUser.classList.add("hidden");
@@ -124,7 +124,6 @@ function entrarAdmin(){
   carregarConfig();
   listarCodigos();
   listarReservas();
-  listarFeedbacks();
  } else alert("Usuário ou senha incorretos");
 }
 
@@ -186,23 +185,20 @@ function listarReservas(){
 }
 
 function limparReservas(){
- if(confirm("Tem certeza que deseja apagar TODAS as reservas do dia?")){
+ if(confirm("Apagar todas as reservas do dia?")){
   reservas=[];
   localStorage.setItem("reservas",JSON.stringify(reservas));
   listarReservas();
-  alert("Reservas do dia apagadas!");
+  alert("Reservas apagadas!");
  }
 }
 
-function listarFeedbacks(){
- let html="";
- feedbacks.forEach(f=>{
-  html+=`${f.nome||"Anônimo"}: ${f.msg}<br>`;
- });
- listaFeedbacks.innerHTML=html||"Nenhuma mensagem";
-}
-
 function entrarUsuario(){
+ if(!dentroDoHorario()){
+  alert("Reservas permitidas somente das 08:00 às 17:00");
+  return;
+ }
+
  if(!nome.value||!codigo.value){alert("Preencha os campos");return;}
  if(!codigos.includes(codigo.value)){alert("Código inválido");return;}
 
@@ -255,16 +251,9 @@ function cancelarReserva(){
  listarOnibus();
 }
 
-function enviarMensagem(){
- if(!mensagem.value){alert("Digite a mensagem");return;}
- feedbacks.push({nome:usuarioAtual.nome,msg:mensagem.value});
- localStorage.setItem("feedbacks",JSON.stringify(feedbacks));
- mensagem.value="";
- alert("Mensagem enviada!");
-}
-
 function sair(){location.reload();}
 </script>
 
 </body>
 </html>
+
