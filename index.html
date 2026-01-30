@@ -51,6 +51,7 @@ hr{margin:10px 0}
 
   <h4>Reservas</h4>
   <div id="listaReservas"></div>
+  <button onclick="limparReservas()">🧹 Limpar reservas do dia</button>
 
   <hr>
 
@@ -184,6 +185,15 @@ function listarReservas(){
  listaReservas.innerHTML=html||"Nenhuma reserva";
 }
 
+function limparReservas(){
+ if(confirm("Tem certeza que deseja apagar TODAS as reservas do dia?")){
+  reservas=[];
+  localStorage.setItem("reservas",JSON.stringify(reservas));
+  listarReservas();
+  alert("Reservas do dia apagadas!");
+ }
+}
+
 function listarFeedbacks(){
  let html="";
  feedbacks.forEach(f=>{
@@ -247,16 +257,5 @@ function cancelarReserva(){
 
 function enviarMensagem(){
  if(!mensagem.value){alert("Digite a mensagem");return;}
- feedbacks.push({nome:usuarioAtual.nome,msg:mensagem.value});
- localStorage.setItem("feedbacks",JSON.stringify(feedbacks));
- mensagem.value="";
- alert("Mensagem enviada!");
-}
-
-function sair(){location.reload();}
-</script>
-
-</body>
-</html>
-
+ feedbacks.push({nome:usuarioAt
 
