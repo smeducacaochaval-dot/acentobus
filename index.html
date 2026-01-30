@@ -257,5 +257,14 @@ function cancelarReserva(){
 
 function enviarMensagem(){
  if(!mensagem.value){alert("Digite a mensagem");return;}
- feedbacks.push({nome:usuarioAt
+ feedbacks.push({nome:usuarioAtual.nome,msg:mensagem.value});
+ localStorage.setItem("feedbacks",JSON.stringify(feedbacks));
+ mensagem.value="";
+ alert("Mensagem enviada!");
+}
 
+function sair(){location.reload();}
+</script>
+
+</body>
+</html>
