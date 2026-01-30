@@ -6,10 +6,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{font-family:Arial;background:#1976d2;color:white;text-align:center}
-.card{background:white;color:black;margin:40px auto;padding:20px;border-radius:15px;width:320px}
-input,button{width:100%;padding:8px;margin-top:6px}
+.card{background:white;color:black;margin:30px auto;padding:20px;border-radius:15px;width:320px}
+input,button{width:100%;padding:8px;margin-top:8px}
 button{background:#1976d2;color:white;border:none;border-radius:8px}
 .hidden{display:none}
+small{color:#555}
 </style>
 </head>
 <body>
@@ -34,103 +35,99 @@ button{background:#1976d2;color:white;border:none;border-radius:8px}
 <div class="card hidden" id="painelAdmin">
   <h3>Painel do Administrador</h3>
 
+  <h4>Configurar ônibus</h4>
+
+  <div id="configOnibus"></div>
+
+  <button onclick="salvarOnibus()">Salvar configurações</button>
+
+  <hr>
+
   <h4>Alterar senha</h4>
   <input id="novaSenha" type="password" placeholder="Nova senha">
   <button onclick="trocarSenha()">Salvar nova senha</button>
-
-  <h4>Configurar ônibus</h4>
-  <div id="configOnibus"></div>
-  <button onclick="salvarOnibus()">Salvar configurações</button>
 
   <br><br>
   <button onclick="sair()">Sair</button>
 </div>
 
 <div class="card hidden" id="painelUser">
-  <h3>Escolha o ônibus</h3>
+  <h3>Escolha seu ônibus</h3>
   <div id="listaOnibus"></div>
   <button onclick="sair()">Sair</button>
 </div>
 
 <script>
-const ADMIN_USER = "smechaval";
-let ADMIN_PASS = localStorage.getItem("adminPass") || "smech@v@l";
+const ADMIN_USER="smechaval";
+let ADMIN_PASS=localStorage.getItem("adminPass")||"smech@v@l";
 
-let onibus = JSON.parse(localStorage.getItem("onibus")) || [
-  {nome:"Ônibus 1", vagas:10},
-  {nome:"Ônibus 2", vagas:10},
-  {nome:"Ônibus 3", vagas:10},
-  {nome:"Ônibus 4", vagas:10},
-  {nome:"Ônibus 5", vagas:10}
+let onibus=JSON.parse(localStorage.getItem("onibus"))||[
+ {nome:"Ônibus 1",vagas:40},
+ {nome:"Ônibus 2",vagas:40},
+ {nome:"Ônibus 3",vagas:40},
+ {nome:"Ônibus 4",vagas:40},
+ {nome:"Ônibus 5",vagas:40}
 ];
 
 function mostrarAdmin(){
-  loginUser.classList.add("hidden");
-  loginAdmin.classList.remove("hidden");
+ loginUser.classList.add("hidden");
+ loginAdmin.classList.remove("hidden");
 }
 
 function voltar(){
-  loginAdmin.classList.add("hidden");
-  loginUser.classList.remove("hidden");
+ loginAdmin.classList.add("hidden");
+ loginUser.classList.remove("hidden");
 }
 
 function entrarAdmin(){
-  if(adminUser.value===ADMIN_USER && adminPass.value===ADMIN_PASS){
-    loginAdmin.classList.add("hidden");
-    painelAdmin.classList.remove("hidden");
-    carregarConfigOnibus();
-  } else alert("Usuário ou senha incorretos");
+ if(adminUser.value===ADMIN_USER && adminPass.value===ADMIN_PASS){
+  loginAdmin.classList.add("hidden");
+  painelAdmin.classList.remove("hidden");
+  carregarConfig();
+ } else alert("Usuário ou senha incorretos");
 }
 
 function trocarSenha(){
-  if(!novaSenha.value){alert("Digite a nova senha");return;}
-  ADMIN_PASS=novaSenha.value;
-  localStorage.setItem("adminPass",ADMIN_PASS);
-  alert("Senha alterada!");
-  novaSenha.value="";
+ if(!novaSenha.value){alert("Digite a nova senha");return;}
+ ADMIN_PASS=novaSenha.value;
+ localStorage.setItem("adminPass",ADMIN_PASS);
+ alert("Senha alterada!");
+ novaSenha.value="";
 }
 
-function entrarUsuario(){
-  if(!nome.value||!codigo.value){alert("Preencha os campos");return;}
-  loginUser.classList.add("hidden");
-  painelUser.classList.remove("hidden");
-  mostrarOnibusUsuario();
-}
-
-function sair(){location.reload();}
-
-function carregarConfigOnibus(){
-  configOnibus.innerHTML="";
-  onibus.forEach((o,i)=>{
-    configOnibus.innerHTML+=`
-      <input placeholder="Nome" value="${o.nome}" 
-        onchange="onibus[${i}].nome=this.value">
-      <input type="number" placeholder="Vagas" value="${o.vagas}" 
-        onchange="onibus[${i}].vagas=this.value">
-      <hr>
-    `;
-  });
+function carregarConfig(){
+ let html="";
+ onibus.forEach((o,i)=>{
+  html+=`
+   <small>Ônibus ${i+1}</small>
+   <input value="${o.nome}" onchange="onibus[${i}].nome=this.value">
+   <input type="number" value="${o.vagas}" onchange="onibus[${i}].vagas=this.value">
+   <br>`;
+ });
+ configOnibus.innerHTML=html;
 }
 
 function salvarOnibus(){
-  localStorage.setItem("onibus",JSON.stringify(onibus));
-  alert("Configurações salvas!");
+ localStorage.setItem("onibus",JSON.stringify(onibus));
+ alert("Configurações salvas!");
 }
 
-function mostrarOnibusUsuario(){
-  listaOnibus.innerHTML="";
-  onibus.forEach(o=>{
-    listaOnibus.innerHTML+=`
-      <button onclick="reservar('${o.nome}')">
-        ${o.nome} (Vagas: ${o.vagas})
-      </button><br>
-    `;
-  });
+function entrarUsuario(){
+ if(!nome.value||!codigo.value){alert("Preencha os campos");return;}
+ loginUser.classList.add("hidden");
+ painelUser.classList.remove("hidden");
+ listarOnibus();
 }
 
-function reservar(o){
-  alert("Reserva feita em: "+o);
+function listarOnibus(){
+ let html="";
+ onibus.forEach(o=>{
+  html+=`<button onclick="alert('Reservado em ${o.nome}')">${o.nome} (${o.vagas} vagas)</button><br>`;
+ });
+ listaOnibus.innerHTML=html;
 }
+
+function sair(){location.reload();}
 </script>
 
 </body>
