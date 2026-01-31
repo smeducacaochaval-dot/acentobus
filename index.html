@@ -2,286 +2,80 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>ASSENTOBUS</title>
+<title>ASSENTOBUS - Admin</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <style>
-body { font-family: Arial, sans-serif; background:#f2f2f2; text-align:center; margin:0; padding:0; }
-h1,h2,h3,h4 { margin:5px; }
-button { padding:10px; margin:5px; border:none; border-radius:8px; background:#0d47a1; color:white; cursor:pointer; }
-button:hover { background:#1565c0; }
-.box { background:white; padding:15px; margin:10px auto; border-radius:8px; width:90%; max-width:420px; box-shadow:0 2px 5px rgba(0,0,0,0.2); }
-.hidden { display:none; }
-input,textarea { width:90%; padding:8px; margin-top:6px; border-radius:5px; border:1px solid #ccc; }
-textarea { height:80px; }
-.tab { background:#0d47a1; color:white; padding:8px 12px; margin:2px; display:inline-block; cursor:pointer; border-radius:6px; }
-.tab:hover { background:#1565c0; }
-.activeTab { background:#82b1ff; color:#000; }
+body {
+  font-family: Arial, sans-serif;
+  background: #f2f2f2;
+  text-align: center;
+  margin: 0;
+  padding: 0;
+}
+.box {
+  background: white;
+  padding: 20px;
+  margin: 40px auto;
+  border-radius: 10px;
+  width: 90%;
+  max-width: 350px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+input {
+  width: 90%;
+  padding: 10px;
+  margin: 8px 0;
+}
+button {
+  padding: 10px 20px;
+  background: #0d47a1;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.hidden {
+  display: none;
+}
 </style>
 </head>
-
 <body>
 
-<h1>ASSENTOBUS</h1>
-
-<!-- LOGIN USUÁRIO -->
-<div class="box" id="loginUsuario">
-  <h3>Reserva</h3>
-  <input id="nome" placeholder="Nome"><br>
-  <input id="codigo" placeholder="Código"><br><br>
-  <button onclick="entrarUsuario()">Entrar</button><br><br>
-  <button onclick="abrirSugestoes()">Sugestões / Reclamações</button><br><br>
-  <button onclick="mostrarLoginAdmin()">Sou Administrador</button>
+<div class="box" id="login">
+  <h2>Login do Administrador</h2>
+  <input id="usuario" placeholder="Usuário"><br>
+  <input id="senha" type="password" placeholder="Senha"><br><br>
+  <button onclick="entrar()">Entrar</button>
 </div>
 
-<!-- LOGIN ADMIN -->
-<div class="box hidden" id="loginAdmin">
-  <h3>Login do Administrador</h3>
-  <input id="adminUser" placeholder="Usuário"><br>
-  <input id="adminPass" type="password" placeholder="Senha"><br><br>
-  <button onclick="entrarAdmin()">Entrar</button><br>
-  <button onclick="voltarUsuario()">Voltar</button>
+<div class="box hidden" id="painel">
+  <h2>Painel do Administrador</h2>
+  <p>Login realizado com sucesso ✅</p>
+  <button onclick="sair()">Sair</button>
 </div>
 
-<!-- PAINEL ADMIN -->
-<div class="box hidden" id="painelAdmin">
-  <h3>Painel do Administrador</h3>
+<script>
+const USUARIO_ADMIN = "admin";
+const SENHA_ADMIN = "1234";
 
-  <h4>Cadastrar Usuário</h4>
-  <input id="novoUsuarioNome" placeholder="Nome do usuário"><br>
-  <input id="novoUsuarioCodigo" placeholder="Código"><br>
-  <button onclick="cadastrarUsuario()">Cadastrar</button>
-  <div id="listaUsuarios"></div>
+function entrar() {
+  const u = document.getElementById("usuario").value;
+  const s = document.getElementById("senha").value;
 
-  <h4>Configurar Ônibus</h4>
-  <div id="configOnibus"></div>
-  <button onclick="salvarOnibus()">Salvar Ônibus</button>
-
-  <h4>Reservas por Ônibus</h4>
-  <div id="abasOnibus"></div>
-  <div id="conteudoOnibus"></div>
-
-  <h4>Sugestões / Reclamações</h4>
-  <div id="listaFeedbacks"></div>
-
-  <button onclick="logoutAdmin()">Sair</button>
-</div>
-
-<!-- TELA ÔNIBUS -->
-<div class="box hidden" id="telaOnibus"></div>
-
-<!-- LISTA -->
-<div class="box hidden" id="telaLista"></div>
-
-<!-- SUGESTÕES -->
-<div class="box hidden" id="telaSugestao">
-  <h3>Sugestões / Reclamações</h3>
-  <textarea id="textoSugestao" placeholder="Digite aqui"></textarea><br><br>
-  <button onclick="enviarSugestao()">Enviar</button><br><br>
-  <button onclick="voltarUsuario()">Retornar</button>
-</div>
-
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, set, get, child, update, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyBAdz8q124j0Wg5dB2p2_HRaLEkGT9b0W8",
-  authDomain: "assentobus.firebaseapp.com",
-  databaseURL: "https://assentobus-default-rtdb.firebaseio.com",
-  projectId: "assentobus",
-  storageBucket: "assentobus.firebasestorage.app",
-  messagingSenderId: "115120893565",
-  appId: "1:115120893565:web:b72a98c160973dca1d8b14"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-
-const ADMIN_USER="admin";
-const ADMIN_PASS="123";
-
-let usuarioAtual=null;
-let onibus={};
-
-function esconderTudo(){
-  document.querySelectorAll(".box").forEach(d=>d.classList.add("hidden"));
-}
-window.voltarUsuario=()=>{
-  esconderTudo();
-  loginUsuario.classList.remove("hidden");
-}
-window.mostrarLoginAdmin=()=>{
-  esconderTudo();
-  loginAdmin.classList.remove("hidden");
-}
-
-window.entrarAdmin=()=>{
-  if(adminUser.value===ADMIN_USER && adminPass.value===ADMIN_PASS){
-    esconderTudo();
-    painelAdmin.classList.remove("hidden");
-    carregarOnibus();
-    listarUsuarios();
-    gerarAbas();
-    listarFeedbacks();
-  } else alert("Login inválido");
-}
-
-window.logoutAdmin=()=>voltarUsuario();
-
-window.cadastrarUsuario=()=>{
-  const nome=novoUsuarioNome.value;
-  const codigo=novoUsuarioCodigo.value;
-  if(!nome||!codigo)return alert("Preencha tudo");
-  set(ref(db,"usuarios/"+codigo),{nome,codigo});
-  novoUsuarioNome.value="";
-  novoUsuarioCodigo.value="";
-  listarUsuarios();
-}
-
-function listarUsuarios(){
-  onValue(ref(db,"usuarios"),snap=>{
-    let html="<b>Usuários:</b><br>";
-    snap.forEach(u=>{
-      html+=`${u.val().nome} (${u.val().codigo})<br>`;
-    });
-    listaUsuarios.innerHTML=html;
-  });
-}
-
-function carregarOnibus(){
-  const padrao={
-    1:{nome:"Ônibus 1",rota:"Rota 1",vagas:5,lista:[]},
-    2:{nome:"Ônibus 2",rota:"Rota 2",vagas:5,lista:[]}
-  };
-  get(ref(db,"onibus")).then(snap=>{
-    if(!snap.exists()) set(ref(db,"onibus"),padrao);
-    onValue(ref(db,"onibus"),s=>{
-      onibus=s.val();
-      montarConfig();
-      gerarAbas();
-    });
-  });
-}
-
-function montarConfig(){
-  let html="";
-  for(let i in onibus){
-    html+=`Nome:<input id="n${i}" value="${onibus[i].nome}"><br>
-    Rota:<input id="r${i}" value="${onibus[i].rota}"><br>
-    Vagas:<input id="v${i}" value="${onibus[i].vagas}"><br><br>`;
-  }
-  configOnibus.innerHTML=html;
-}
-
-window.salvarOnibus=()=>{
-  for(let i in onibus){
-    onibus[i].nome=document.getElementById("n"+i).value;
-    onibus[i].rota=document.getElementById("r"+i).value;
-    onibus[i].vagas=parseInt(document.getElementById("v"+i).value);
-  }
-  update(ref(db,"onibus"),onibus);
-  alert("Ônibus atualizados");
-}
-
-window.entrarUsuario=()=>{
-  const nome=document.getElementById("nome").value;
-  const codigo=document.getElementById("codigo").value;
-  get(child(ref(db),"usuarios/"+codigo)).then(s=>{
-    if(!s.exists()||s.val().nome!==nome) return alert("Usuário inválido");
-    usuarioAtual={nome,codigo};
-    mostrarOnibus();
-  });
-}
-
-function mostrarOnibus(){
-  esconderTudo();
-  telaOnibus.classList.remove("hidden");
-  telaOnibus.innerHTML="<h3>Escolha seu ônibus</h3>";
-  for(let i in onibus){
-    let b=document.createElement("button");
-    b.innerText=`${onibus[i].nome} - ${onibus[i].vagas} vagas`;
-    b.onclick=()=>reservar(i);
-    telaOnibus.appendChild(b);
-  }
-  let voltar=document.createElement("button");
-  voltar.innerText="Retornar";
-  voltar.onclick=voltarUsuario;
-  telaOnibus.appendChild(document.createElement("br"));
-  telaOnibus.appendChild(voltar);
-}
-
-function reservar(id){
-  get(child(ref(db),"reservas/"+usuarioAtual.codigo)).then(s=>{
-    if(s.exists()){
-      alert("Você já escolheu um ônibus.");
-      return;
-    }
-    if(onibus[id].vagas<=0)return alert("Sem vagas");
-    onibus[id].vagas--;
-    onibus[id].lista.push(usuarioAtual.nome);
-    update(ref(db,"onibus/"+id),onibus[id]);
-    set(ref(db,"reservas/"+usuarioAtual.codigo),{nome:usuarioAtual.nome,onibus:id});
-    mostrarLista(id);
-  });
-}
-
-function mostrarLista(id){
-  esconderTudo();
-  telaLista.classList.remove("hidden");
-  telaLista.innerHTML=`<h3>${onibus[id].nome}</h3>`;
-  onibus[id].lista.forEach(n=>{
-    let p=document.createElement("p");
-    p.innerText=n;
-    telaLista.appendChild(p);
-  });
-  let voltar=document.createElement("button");
-  voltar.innerText="Retornar";
-  voltar.onclick=voltarUsuario;
-  telaLista.appendChild(voltar);
-}
-
-function gerarAbas(){
-  abasOnibus.innerHTML="";
-  for(let i in onibus){
-    let t=document.createElement("div");
-    t.className="tab";
-    t.innerText=onibus[i].nome;
-    t.onclick=()=>mostrarListaAdmin(i);
-    abasOnibus.appendChild(t);
+  if (u === USUARIO_ADMIN && s === SENHA_ADMIN) {
+    document.getElementById("login").classList.add("hidden");
+    document.getElementById("painel").classList.remove("hidden");
+  } else {
+    alert("Usuário ou senha inválidos");
   }
 }
 
-function mostrarListaAdmin(id){
-  conteudoOnibus.innerHTML="";
-  onibus[id].lista.forEach(n=>{
-    let p=document.createElement("p");
-    p.innerText=n;
-    conteudoOnibus.appendChild(p);
-  });
-}
-
-window.abrirSugestoes=()=>{
-  esconderTudo();
-  telaSugestao.classList.remove("hidden");
-}
-
-window.enviarSugestao=()=>{
-  const texto=textoSugestao.value;
-  if(!texto)return alert("Digite algo");
-  const id=Date.now();
-  set(ref(db,"sugestoes/"+id),{msg:texto});
-  textoSugestao.value="";
-  alert("Enviado!");
-}
-
-function listarFeedbacks(){
-  onValue(ref(db,"sugestoes"),snap=>{
-    let html="";
-    snap.forEach(s=>html+=s.val().msg+"<br>");
-    listaFeedbacks.innerHTML=html||"Nenhuma mensagem";
-  });
+function sair() {
+  document.getElementById("painel").classList.add("hidden");
+  document.getElementById("login").classList.remove("hidden");
 }
 </script>
+
 </body>
 </html>
+
