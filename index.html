@@ -3,105 +3,109 @@
 <head>
 <meta charset="UTF-8">
 <title>AcentoBus</title>
-<link rel="manifest" href="manifest.json">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <style>
 body { font-family: Arial, sans-serif; background:#f2f2f2; text-align:center; margin:0; padding:0; }
-h1,h2,h3,h4 { margin:5px; }
 button { padding:10px; margin:5px; border:none; border-radius:8px; background:#0d47a1; color:white; cursor:pointer; }
-button:hover { background:#1565c0; }
 .box { background:white; padding:15px; margin:10px auto; border-radius:8px; width:90%; max-width:400px; box-shadow:0 2px 5px rgba(0,0,0,0.2); }
 .hidden { display:none; }
 input,textarea { width:90%; padding:8px; margin-top:6px; border-radius:5px; border:1px solid #ccc; }
-textarea { height:80px; }
-.logo { max-width:150px; margin:10px auto; display:block; }
 .tab { background:#0d47a1; color:white; padding:8px 12px; margin:2px; display:inline-block; cursor:pointer; border-radius:6px; }
-.tab:hover { background:#1565c0; }
 .activeTab { background:#82b1ff; color:#000; }
 </style>
 </head>
-
 <body>
 
-<img src="logo.png" class="logo">
 <h1>AcentoBus</h1>
 
-<!-- TELAS (iguais ao seu código) -->
 <div class="box" id="loginUsuario">
-  <h3>Reserva</h3>
   <input id="nome" placeholder="Nome"><br>
   <input id="codigo" placeholder="Código"><br><br>
-  <button onclick="entrarUsuario()">Entrar</button><br>
-  <button onclick="abrirSugestoes()">Sugestões / Reclamações</button><br><br>
+  <button onclick="entrarUsuario()">Entrar</button>
   <button onclick="mostrarLoginAdmin()">Sou Administrador</button>
 </div>
 
 <div class="box hidden" id="loginAdmin">
-  <h3>Login do Administrador</h3>
   <input id="adminUser" placeholder="Usuário"><br>
   <input id="adminPass" type="password" placeholder="Senha"><br><br>
-  <button onclick="entrarAdmin()">Entrar</button><br>
+  <button onclick="entrarAdmin()">Entrar</button>
   <button onclick="voltarUsuario()">Voltar</button>
 </div>
 
 <div class="box hidden" id="painelAdmin">
-  <h3>Painel do Administrador</h3>
-  <div id="configOnibus"></div>
-  <button onclick="salvarOnibus()">Salvar Ônibus</button><br><br>
-  <div id="abasOnibus"></div>
-  <div id="conteudoOnibus"></div>
-  <button onclick="limparReservas()">Limpar Reservas do Dia</button><br><br>
-  <h4>Cadastrar Usuário</h4>
-  <input id="novoUsuarioNome" placeholder="Nome do usuário"><br>
-  <input id="novoUsuarioCodigo" placeholder="Código / Senha"><br>
-  <button onclick="cadastrarUsuario()">Cadastrar Usuário</button><br><br>
+  <h3>Painel</h3>
+  <input id="novoUsuarioNome" placeholder="Nome"><br>
+  <input id="novoUsuarioCodigo" placeholder="Código"><br>
+  <button onclick="cadastrarUsuario()">Cadastrar Usuário</button>
   <div id="listaUsuarios"></div>
-  <h4>Mensagens</h4>
-  <div id="listaFeedbacks"></div>
-  <button onclick="limparFeedbacks()">Limpar Sugestões/Reclamações</button><br><br>
-  <h4>Alterar Senha</h4>
-  <input id="novaSenha" type="password" placeholder="Nova senha">
-  <button onclick="trocarSenha()">Salvar nova senha</button><br><br>
   <button onclick="logoutAdmin()">Sair</button>
 </div>
 
 <div class="box hidden" id="telaOnibus"></div>
-<div class="box hidden" id="telaLista"></div>
 
-<div class="box hidden" id="telaSugestao">
-  <h3>Sugestões / Reclamações</h3>
-  <textarea id="sugestao" placeholder="Digite aqui"></textarea><br><br>
-  <button onclick="enviarSugestao()">Enviar</button><br><br>
-  <button onclick="voltarInicio()">Retornar</button>
-</div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import { getDatabase, ref, set, get, child, update } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
-<!-- 🔥 FIREBASE -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
-<script>
+/* 🔥 COLE AQUI SEU firebaseConfig */
 const firebaseConfig = {
-  apiKey: "AIzaSyBDdybvjSKvJrAl7wa3dJgqvSXvSQj6tEg",
-  authDomain: "acentobus-9b604.firebaseapp.com",
-  databaseURL: "https://acentobus-9b604-default-rtdb.firebaseio.com",
-  projectId: "acentobus-9b604",
-  storageBucket: "acentobus-9b604.firebasestorage.app",
-  messagingSenderId: "708150801201",
-  appId: "1:708150801201:web:efb1d2ecb0c96321383610"
+  apiKey: "SUA_API_KEY",
+  authDomain: "SEU_DOMINIO",
+  databaseURL: "SUA_DATABASE_URL",
+  projectId: "SEU_PROJECT_ID",
+  storageBucket: "SEU_STORAGE",
+  messagingSenderId: "SEU_SENDER",
+  appId: "SEU_APPID"
 };
 
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-</script>
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 
-<!-- SEU SCRIPT ORIGINAL -->
-<script>
-/* 👉 AQUI fica todo o seu código JS original
-   (o que você me mandou) */
-</script>
+const ADMIN_USER="smechaval";
+const ADMIN_PASS="smech@v@l";
+let usuarioAtual=null;
 
+function esconderTudo(){
+  document.querySelectorAll(".box").forEach(b=>b.classList.add("hidden"));
+}
+window.voltarUsuario=()=>{esconderTudo();loginUsuario.classList.remove("hidden");}
+window.mostrarLoginAdmin=()=>{esconderTudo();loginAdmin.classList.remove("hidden");}
+
+window.entrarAdmin=async()=>{
+  if(adminUser.value===ADMIN_USER && adminPass.value===ADMIN_PASS){
+    esconderTudo();
+    painelAdmin.classList.remove("hidden");
+    listarUsuariosAdmin();
+  } else alert("Login inválido");
+}
+
+window.cadastrarUsuario=async()=>{
+  const nome=novoUsuarioNome.value;
+  const codigo=novoUsuarioCodigo.value;
+  if(!nome||!codigo)return alert("Preencha tudo");
+  await set(ref(db,"usuarios/"+codigo),{nome,codigo});
+  alert("Usuário salvo!");
+  listarUsuariosAdmin();
+}
+
+async function listarUsuariosAdmin(){
+  const snap=await get(ref(db,"usuarios"));
+  listaUsuarios.innerHTML="<b>Usuários:</b><br>";
+  snap.forEach(c=>{
+    listaUsuarios.innerHTML+=`${c.val().nome} (${c.val().codigo})<br>`;
+  });
+}
+
+window.entrarUsuario=async()=>{
+  const nome=document.getElementById("nome").value;
+  const codigo=document.getElementById("codigo").value;
+  const snap=await get(child(ref(db),"usuarios/"+codigo));
+  if(!snap.exists()||snap.val().nome!==nome)return alert("Inválido");
+  usuarioAtual={nome,codigo};
+  alert("Login OK (Firebase)");
+}
+
+window.logoutAdmin=()=>location.reload();
+</script>
 </body>
 </html>
-
-
