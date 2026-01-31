@@ -6,10 +6,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body { font-family: Arial, sans-serif; background:#f2f2f2; text-align:center; margin:0; padding:0; }
+h1,h2,h3,h4 { margin:5px; }
 button { padding:10px; margin:5px; border:none; border-radius:8px; background:#0d47a1; color:white; cursor:pointer; }
+button:hover { background:#1565c0; }
 .box { background:white; padding:15px; margin:10px auto; border-radius:8px; width:90%; max-width:400px; box-shadow:0 2px 5px rgba(0,0,0,0.2); }
 .hidden { display:none; }
 input,textarea { width:90%; padding:8px; margin-top:6px; border-radius:5px; border:1px solid #ccc; }
+textarea { height:80px; }
 .tab { background:#0d47a1; color:white; padding:8px 12px; margin:2px; display:inline-block; cursor:pointer; border-radius:6px; }
 .activeTab { background:#82b1ff; color:#000; }
 </style>
@@ -19,93 +22,235 @@ input,textarea { width:90%; padding:8px; margin-top:6px; border-radius:5px; bord
 <h1>AcentoBus</h1>
 
 <div class="box" id="loginUsuario">
+  <h3>Reserva</h3>
   <input id="nome" placeholder="Nome"><br>
   <input id="codigo" placeholder="Código"><br><br>
-  <button onclick="entrarUsuario()">Entrar</button>
+  <button onclick="entrarUsuario()">Entrar</button><br>
+  <button onclick="abrirSugestoes()">Sugestões / Reclamações</button><br><br>
   <button onclick="mostrarLoginAdmin()">Sou Administrador</button>
 </div>
 
 <div class="box hidden" id="loginAdmin">
+  <h3>Login do Administrador</h3>
   <input id="adminUser" placeholder="Usuário"><br>
   <input id="adminPass" type="password" placeholder="Senha"><br><br>
-  <button onclick="entrarAdmin()">Entrar</button>
+  <button onclick="entrarAdmin()">Entrar</button><br>
   <button onclick="voltarUsuario()">Voltar</button>
 </div>
 
 <div class="box hidden" id="painelAdmin">
-  <h3>Painel</h3>
-  <input id="novoUsuarioNome" placeholder="Nome"><br>
+  <h3>Painel do Administrador</h3>
+
+  <h4>Configurar Ônibus</h4>
+  <div id="configOnibus"></div>
+  <button onclick="salvarOnibus()">Salvar Ônibus</button><br><br>
+
+  <h4>Reservas por Ônibus</h4>
+  <div id="abasOnibus"></div>
+  <div id="conteudoOnibus"></div><br>
+
+  <h4>Cadastrar Usuário</h4>
+  <input id="novoUsuarioNome" placeholder="Nome do usuário"><br>
   <input id="novoUsuarioCodigo" placeholder="Código"><br>
-  <button onclick="cadastrarUsuario()">Cadastrar Usuário</button>
+  <button onclick="cadastrarUsuario()">Cadastrar Usuário</button><br><br>
   <div id="listaUsuarios"></div>
+
+  <h4>Mensagens</h4>
+  <div id="listaFeedbacks"></div>
+
+  <h4>Alterar Senha</h4>
+  <input id="novaSenha" type="password" placeholder="Nova senha">
+  <button onclick="trocarSenha()">Salvar nova senha</button><br><br>
+
   <button onclick="logoutAdmin()">Sair</button>
 </div>
 
 <div class="box hidden" id="telaOnibus"></div>
+<div class="box hidden" id="telaLista"></div>
+
+<div class="box hidden" id="telaSugestao">
+  <h3>Sugestões / Reclamações</h3>
+  <textarea id="sugestao" placeholder="Digite aqui"></textarea><br><br>
+  <button onclick="enviarSugestao()">Enviar</button><br><br>
+  <button onclick="voltarInicio()">Retornar</button>
+</div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import { getDatabase, ref, set, get, child, update } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, get, child, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-/* 🔥 COLE AQUI SEU firebaseConfig */
 const firebaseConfig = {
-  apiKey: "SUA_API_KEY",
-  authDomain: "SEU_DOMINIO",
-  databaseURL: "SUA_DATABASE_URL",
-  projectId: "SEU_PROJECT_ID",
-  storageBucket: "SEU_STORAGE",
-  messagingSenderId: "SEU_SENDER",
-  appId: "SEU_APPID"
+  apiKey: "AIzaSyBDdybvjSKvJrAl7wa3dJgqvSXvSQj6tEg",
+  authDomain: "acentobus-9b604.firebaseapp.com",
+  databaseURL: "https://acentobus-9b604-default-rtdb.firebaseio.com",
+  projectId: "acentobus-9b604",
+  storageBucket: "acentobus-9b604.appspot.com",
+  messagingSenderId: "708150801201",
+  appId: "1:708150801201:web:efb1d2ecb0c96321383610"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 const ADMIN_USER="smechaval";
-const ADMIN_PASS="smech@v@l";
+let ADMIN_PASS="smech@v@l";
 let usuarioAtual=null;
+let onibus={};
+let reservas={};
 
 function esconderTudo(){
   document.querySelectorAll(".box").forEach(b=>b.classList.add("hidden"));
 }
-window.voltarUsuario=()=>{esconderTudo();loginUsuario.classList.remove("hidden");}
-window.mostrarLoginAdmin=()=>{esconderTudo();loginAdmin.classList.remove("hidden");}
+function voltarInicio(){
+  esconderTudo();
+  document.getElementById("loginUsuario").classList.remove("hidden");
+}
+
+window.mostrarLoginAdmin=()=>{esconderTudo();loginAdmin.classList.remove("hidden")}
+window.voltarUsuario=()=>{esconderTudo();loginUsuario.classList.remove("hidden")}
+
+async function carregarDados(){
+  const snap = await get(child(ref(db), "/"));
+  const data = snap.val() || {};
+  onibus = data.onibus || {};
+  reservas = data.reservas || {};
+  ADMIN_PASS = data.adminPass || ADMIN_PASS;
+}
+carregarDados();
 
 window.entrarAdmin=async()=>{
+  await carregarDados();
   if(adminUser.value===ADMIN_USER && adminPass.value===ADMIN_PASS){
     esconderTudo();
     painelAdmin.classList.remove("hidden");
+    carregarConfig();
+    gerarAbasOnibus();
     listarUsuariosAdmin();
+    listarFeedbacks();
   } else alert("Login inválido");
 }
 
+window.trocarSenha=()=>{
+  ADMIN_PASS=novaSenha.value;
+  set(ref(db,"adminPass"),ADMIN_PASS);
+  alert("Senha alterada");
+}
+
+window.entrarUsuario=async()=>{
+  await carregarDados();
+  let nome=document.getElementById("nome").value;
+  let codigo=document.getElementById("codigo").value;
+  const snap=await get(ref(db,"usuarios/"+codigo));
+  if(!snap.exists()||snap.val().nome!==nome){alert("Inválido");return;}
+  usuarioAtual={nome,codigo};
+  mostrarOnibus();
+}
+
 window.cadastrarUsuario=async()=>{
-  const nome=novoUsuarioNome.value;
-  const codigo=novoUsuarioCodigo.value;
-  if(!nome||!codigo)return alert("Preencha tudo");
+  let nome=novoUsuarioNome.value;
+  let codigo=novoUsuarioCodigo.value;
   await set(ref(db,"usuarios/"+codigo),{nome,codigo});
-  alert("Usuário salvo!");
+  alert("Usuário cadastrado");
   listarUsuariosAdmin();
 }
 
 async function listarUsuariosAdmin(){
   const snap=await get(ref(db,"usuarios"));
-  listaUsuarios.innerHTML="<b>Usuários:</b><br>";
-  snap.forEach(c=>{
-    listaUsuarios.innerHTML+=`${c.val().nome} (${c.val().codigo})<br>`;
+  let usuarios=snap.val()||{};
+  listaUsuarios.innerHTML="";
+  for(let c in usuarios){
+    listaUsuarios.innerHTML+=usuarios[c].nome+" ("+c+")<br>";
+  }
+}
+
+window.abrirSugestoes=()=>{esconderTudo();telaSugestao.classList.remove("hidden")}
+window.enviarSugestao=async()=>{
+  let texto=sugestao.value;
+  let id=Date.now();
+  await set(ref(db,"sugestoes/"+id),{msg:texto,data:new Date().toLocaleDateString()});
+  alert("Enviado");
+  sugestao.value="";
+}
+
+async function listarFeedbacks(){
+  const snap=await get(ref(db,"sugestoes"));
+  let s=snap.val()||{};
+  listaFeedbacks.innerHTML="";
+  for(let i in s){
+    listaFeedbacks.innerHTML+=s[i].data+" - "+s[i].msg+"<br>";
+  }
+}
+
+function carregarConfig(){
+  configOnibus.innerHTML="";
+  for(let i in onibus){
+    configOnibus.innerHTML+=`
+    <div>
+    Nome:<input id="nomeOnibus${i}" value="${onibus[i].nome}">
+    Rota:<input id="rotaOnibus${i}" value="${onibus[i].rota}">
+    Vagas:<input id="vagasOnibus${i}" value="${onibus[i].vagas}">
+    </div><br>`;
+  }
+}
+
+window.salvarOnibus=()=>{
+  for(let i in onibus){
+    onibus[i].nome=document.getElementById("nomeOnibus"+i).value;
+    onibus[i].rota=document.getElementById("rotaOnibus"+i).value;
+    onibus[i].vagas=parseInt(document.getElementById("vagasOnibus"+i).value);
+  }
+  set(ref(db,"onibus"),onibus);
+  alert("Ônibus salvos");
+}
+
+function gerarAbasOnibus(){
+  abasOnibus.innerHTML="";
+  for(let i in onibus){
+    let d=document.createElement("div");
+    d.className="tab";
+    d.innerText=onibus[i].nome;
+    d.onclick=()=>mostrarListaOnibus(i);
+    abasOnibus.appendChild(d);
+  }
+}
+
+function mostrarListaOnibus(id){
+  conteudoOnibus.innerHTML="";
+  (onibus[id].lista||[]).forEach(n=>{
+    conteudoOnibus.innerHTML+=n+"<br>";
   });
 }
 
-window.entrarUsuario=async()=>{
-  const nome=document.getElementById("nome").value;
-  const codigo=document.getElementById("codigo").value;
-  const snap=await get(child(ref(db),"usuarios/"+codigo));
-  if(!snap.exists()||snap.val().nome!==nome)return alert("Inválido");
-  usuarioAtual={nome,codigo};
-  alert("Login OK (Firebase)");
+function mostrarOnibus(){
+  esconderTudo();
+  telaOnibus.classList.remove("hidden");
+  telaOnibus.innerHTML="<h3>Escolha seu ônibus</h3>";
+  for(let i in onibus){
+    let b=document.createElement("button");
+    b.innerText=onibus[i].nome+" - "+onibus[i].rota+" ("+onibus[i].vagas+")";
+    b.onclick=()=>reservar(i);
+    telaOnibus.appendChild(b);
+  }
 }
 
-window.logoutAdmin=()=>location.reload();
+async function reservar(id){
+  if(onibus[id].vagas<=0){alert("Sem vagas");return;}
+  onibus[id].vagas--;
+  onibus[id].lista=onibus[id].lista||[];
+  onibus[id].lista.push(usuarioAtual.nome);
+  reservas[usuarioAtual.codigo]={nome:usuarioAtual.nome,onibus:id};
+  await set(ref(db,"onibus"),onibus);
+  await set(ref(db,"reservas"),reservas);
+  mostrarLista(id);
+}
+
+function mostrarLista(id){
+  esconderTudo();
+  telaLista.classList.remove("hidden");
+  telaLista.innerHTML="<h3>"+onibus[id].nome+"</h3>";
+  onibus[id].lista.forEach(n=>telaLista.innerHTML+=n+"<br>");
+}
 </script>
+
 </body>
 </html>
